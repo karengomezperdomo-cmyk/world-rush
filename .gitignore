@@ -1,0 +1,30 @@
+# dependencies / build output
+node_modules/
+.next/
+out/
+dist/
+coverage/
+.turbo/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# local databases (embedded PGlite)
+.data/
+
+# Box2D WASM copied out of node_modules by scripts/copy-box2d.mjs (regenerated on predev/prebuild)
+apps/web/public/box2d/
+
+# secrets: NEVER commit. Only .env.example is tracked.
+.env
+.env.*
+!.env.example
+
+# logs / OS / editors
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.claude/settings.local.json

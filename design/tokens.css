@@ -1,0 +1,88 @@
+/* RUSH 7: design tokens (provisional visual identity, decisions A1/C1/C2). Palette sampled from the Home mock. */
+/* Jersey 15 has a single weight (400). The bold-looking headings are the font's own design, never synthesized. */
+@font-face {
+  font-family: 'Jersey 15';
+  font-weight: 400;
+  font-display: block;
+  src: url('fonts/jersey-15-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Silkscreen';
+  font-weight: 400;
+  font-display: block;
+  src: url('fonts/silkscreen-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Silkscreen';
+  font-weight: 700;
+  font-display: block;
+  src: url('fonts/silkscreen-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Chakra Petch';
+  font-weight: 400;
+  font-display: block;
+  src: url('fonts/chakra-petch-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Chakra Petch';
+  font-weight: 500;
+  font-display: block;
+  src: url('fonts/chakra-petch-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Chakra Petch';
+  font-weight: 600;
+  font-display: block;
+  src: url('fonts/chakra-petch-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Chakra Petch';
+  font-weight: 700;
+  font-display: block;
+  src: url('fonts/chakra-petch-latin-700-normal.woff2') format('woff2');
+}
+
+:root {
+  /* surfaces */
+  --bg: #0a0e25;
+  --bg-2: #0d112e;
+  --panel: #0b1533;
+  --panel-2: #0f1c45;
+  --panel-3: #132352;
+  --scrim: #05071299;
+
+  /* lines */
+  --line: #2c50c0;
+  --line-2: #1b2f6e;
+  --line-3: #14224f;
+
+  /* text */
+  --text: #f1f5ff;
+  --muted: #8ea0d4;
+  --faint: #5a6795;
+
+  /* accents */
+  --yellow: #f8af40;
+  --yellow-hi: #ffd06a;
+  --yellow-lo: #c9701f;
+  --ink: #1a1030;
+  --green: #2ee59d;
+  --green-lo: #127a55;
+  --cyan: #35d6ff;
+  --orange: #ff8a3a;
+  --red: #ff4d5a;
+  --gold: #ffc23e;
+  --silver: #c9d2ee;
+  --bronze: #e08a4a;
+
+  /* type */
+  --font-display: 'Jersey 15', ui-monospace, monospace;
+  --font-label: 'Silkscreen', ui-monospace, monospace;
+  --font-ui: 'Chakra Petch', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* layout: 1 art pixel = 2 CSS px */
+  --px: 2px;
+  --safe-top: 47px;
+  --safe-bottom: 34px;
+}

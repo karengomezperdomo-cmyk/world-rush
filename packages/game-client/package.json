@@ -1,0 +1,16 @@
+{
+  "name": "@worldrush/game-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@worldrush/game-core": "workspace:*",
+    "pixi.js": "8.21.0"
+  }
+}

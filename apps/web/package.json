@@ -1,0 +1,31 @@
+{
+  "name": "@worldrush/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "predev": "node ../../scripts/copy-box2d.mjs",
+    "dev": "next dev",
+    "prebuild": "node ../../scripts/copy-box2d.mjs",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@worldcoin/idkit": "4.3.0",
+    "@worldcoin/minikit-js": "2.0.3",
+    "@worldrush/auth": "workspace:*",
+    "@worldrush/config": "workspace:*",
+    "@worldrush/db": "workspace:*",
+    "@worldrush/game-client": "workspace:*",
+    "@worldrush/game-core": "workspace:*",
+    "@worldrush/shared": "workspace:*",
+    "next": "^16.3.5",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0"
+  }
+}

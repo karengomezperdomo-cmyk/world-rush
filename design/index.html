@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RUSH 7 · Design board</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="ui.css" />
+    <link rel="stylesheet" href="screens.css" />
+    <link rel="stylesheet" href="board.css" />
+  </head>
+  <body>
+    <script src="icons.js"></script>
+    <div class="wrap">
+      <header class="top">
+        <div class="meta">
+          <h1>Tablero de diseño</h1>
+          <p>
+            Todas las pantallas, sprites y reglas visuales del juego en un solo sitio. Es una primera pasada para revisar juntos: el
+            arte lo genera código (provisional), el nombre es provisional y nada de esto está conectado todavía a World ni a Vercel.
+          </p>
+          <div class="pills">
+            <span class="pill warn">Nombre: RUSH 7 (provisional)</span>
+            <span class="pill warn">Arte: provisional</span>
+            <span class="pill">Layout: A por defecto · B en Settings</span>
+            <span class="pill">Recompensas: no implementadas</span>
+          </div>
+        </div>
+        <img class="logo pix" src="art/logo/rush7.png" alt="RUSH 7" />
+      </header>
+
+      <nav class="toc">
+        <a href="#pantallas">PANTALLAS</a>
+        <a href="#layouts">GAMEPLAY A vs B</a>
+        <a href="#controles">CONTROLES</a>
+        <a href="#identidad">IDENTIDAD VISUAL</a>
+        <a href="#sprites">SPRITES Y MAPAS</a>
+        <a href="#componentes">COMPONENTES</a>
+        <a href="#decisiones">DECISIONES</a>
+      </nav>
+
+      <!-- ============================================================ SCREENS -->
+      <section id="pantallas">
+        <h2>Pantallas</h2>
+        <p class="lede">
+          Formato 390 × 844 (iPhone reciente, con zonas seguras). Haz clic en una pantalla para abrir la versión HTML viva. Los textos de
+          la interfaz están en inglés, como en tu esquema; las notas de diseño en naranja son anotaciones, no forman parte de la interfaz.
+        </p>
+        <div class="grid shots">
+          <figure class="shot"><a href="screens/home.html"><img src="screens/png/home.png" alt="Home" /></a><figcaption><b>Home</b>Tu esquema, con la pestaña REWARDS oculta (4 pestañas). El chip "human" es un marcador provisional.</figcaption></figure>
+          <figure class="shot"><a href="screens/verify.html"><img src="screens/png/verify.png" alt="Verify" /></a><figcaption><b>Verify</b>Puerta "prueba que eres humano" antes de la primera carrera puntuable (paso 1 acceso, paso 2 World ID).</figcaption></figure>
+          <figure class="shot"><a href="screens/gameplay-a.html"><img src="screens/png/gameplay-a.png" alt="Gameplay A" /></a><figcaption><b>Gameplay · layout A</b>Mundo a pantalla completa, HUD arriba a la izquierda, 4 botones flotando abajo.</figcaption></figure>
+          <figure class="shot"><a href="screens/gameplay-b.html"><img src="screens/png/gameplay-b.png" alt="Gameplay B" /></a><figcaption><b>Gameplay · layout B</b>Ventana 4:3 arriba y cuatro pads altos debajo; ningún dedo tapa el mundo.</figcaption></figure>
+          <figure class="shot"><a href="screens/crash.html"><img src="screens/png/crash.png" alt="Crash" /></a><figcaption><b>Crash</b>Reaparece en el último checkpoint; el reloj sigue corriendo (decisión B3).</figcaption></figure>
+          <figure class="shot"><a href="screens/pause.html"><img src="screens/png/pause.png" alt="Pause" /></a><figcaption><b>Pause</b>Reanudar, reiniciar carrera o salir. Pausar nunca detiene el reloj diario.</figcaption></figure>
+          <figure class="shot"><a href="screens/finish.html"><img src="screens/png/finish.png" alt="Finish" /></a><figcaption><b>Finish</b>Tiempo, mejor tiempo, ranking, parciales por checkpoint y estado "verificado por el servidor".</figcaption></figure>
+          <figure class="shot"><a href="screens/leaderboard.html"><img src="screens/png/leaderboard.png" alt="Leaderboard" /></a><figcaption><b>Leaderboard</b>Podio, lista, tu fila fija con la distancia al puesto anterior, y selector de día.</figcaption></figure>
+          <figure class="shot"><a href="screens/profile.html"><img src="screens/png/profile.png" alt="Profile" /></a><figcaption><b>Profile</b>Identidad, estadísticas, mejores tiempos por mapa y tarjeta "Rewards · coming soon".</figcaption></figure>
+          <figure class="shot"><a href="screens/results.html"><img src="screens/png/results.png" alt="Week results" /></a><figcaption><b>Week results</b>Resumen de la semana. La regla del campeón semanal (A5) sigue abierta; aquí solo se fija el diseño.</figcaption></figure>
+          <figure class="shot"><a href="screens/how-to-play.html"><img src="screens/png/how-to-play.png" alt="How to play" /></a><figcaption><b>How to play</b>Un mapa al día, controles, mejor tiempo, juego limpio.</figcaption></figure>
+          <figure class="shot"><a href="screens/settings.html"><img src="screens/png/settings.png" alt="Settings" /></a><figcaption><b>Settings</b>Sonido, vibración, layout A/B, invertir lados, menos destellos, privacidad.</figcaption></figure>
+          <figure class="shot"><a href="screens/states.html"><img src="screens/png/states.png" alt="States" /></a><figcaption><b>States</b>Cargando, sin conexión, carrera rechazada, carrera terminada, carrera a punto de cerrar.</figcaption></figure>
+        </div>
+      </section>
+
+      <!-- ============================================================ LAYOUTS -->
+      <section id="layouts">
+        <h2>Gameplay: dos formas de usar la pantalla vertical</h2>
+        <p class="lede">
+          El juego original es horizontal y el tuyo es vertical, así que la pantalla sobra por arriba y falta por los lados. Hay dos
+          maneras razonables de resolverlo. Las zonas marcadas: rojo = esquina superior derecha que World App se reserva, cian = zonas
+          seguras, verde = alcance de los pulgares.
+        </p>
+        <div class="compare">
+          <div class="col">
+            <figure class="shot"><a href="screens/gameplay-a.html"><img src="screens/png/gameplay-a-zones.png" alt="A con zonas" /></a><figcaption><b>A · pantalla completa</b></figcaption></figure>
+            <div class="box">
+              <h3>Layout A <span class="tag ok">POR DEFECTO</span></h3>
+              <ul>
+                <li><b>Ventaja:</b> más mundo a la vista y sensación de juego "de verdad".</li>
+                <li><b>Ventaja:</b> el suelo de abajo es siempre subsuelo, así que los botones flotan sobre algo sin importancia.</li>
+                <li><b>Riesgo:</b> botones más pequeños (78–90 px) y los dedos tapan la franja baja.</li>
+                <li><b>Regla de nivel:</b> el terreno jugable vive entre el 20% y el 65% de la altura.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="col">
+            <figure class="shot"><a href="screens/gameplay-b.html"><img src="screens/png/gameplay-b-zones.png" alt="B con zonas" /></a><figcaption><b>B · ventana 4:3 + panel</b></figcaption></figure>
+            <div class="box">
+              <h3>Layout B <span class="tag">EN SETTINGS</span></h3>
+              <ul>
+                <li><b>Ventaja:</b> los dedos nunca tapan el mundo y los pads son enormes (84 × 288 px), fáciles sin mirar.</li>
+                <li><b>Ventaja:</b> mejor para accesibilidad y pulgares grandes.</li>
+                <li><b>Riesgo:</b> la ventana es pequeña (390 × 292), se ve menos pista y los saltos largos son más difíciles de leer.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="box" style="margin-top: 18px">
+          <h3>Decidido <span class="tag ok">24-09</span></h3>
+          <p>
+            Se construyen los dos (misma lógica, solo cambia la presentación) y el cambio vive en
+            <b>Settings → Layout</b>. Por defecto A. Cuál queda fijo se confirma jugando el prototipo de la Fase 5, no
+            mirando dibujos.
+          </p>
+        </div>
+      </section>
+
+      <!-- ============================================================ CONTROLS -->
+      <section id="controles">
+        <h2>Controles (esquema A: 4 botones digitales)</h2>
+        <p class="lede">
+          Cada botón está pulsado o no. En cada paso fijo de simulación se guarda una máscara de 4 bits; esa secuencia es el "replay" que el servidor
+          vuelve a simular para validar el tiempo.
+        </p>
+        <div class="grid two">
+          <div class="box">
+            <h3>Botones</h3>
+            <ul>
+              <li><svg class="i" style="width: 18px; height: 18px; color: var(--yellow); vertical-align: -4px"><use href="#gas" /></svg> <b>GAS</b> (bit 1): acelera.</li>
+              <li><svg class="i" style="width: 18px; height: 18px; color: #ff9b8a; vertical-align: -4px"><use href="#brake" /></svg> <b>BRAKE</b> (bit 2): frena; parado, da marcha atrás.</li>
+              <li><svg class="i" style="width: 18px; height: 18px; color: #9cd1ff; vertical-align: -4px"><use href="#lean-back" /></svg> <b>LEAN BACK</b> (bit 4): inclina hacia atrás (caballito, frenar giro en el aire).</li>
+              <li><svg class="i" style="width: 18px; height: 18px; color: #9cd1ff; vertical-align: -4px"><use href="#lean-fwd" /></svg> <b>LEAN FWD</b> (bit 8): inclina hacia delante (picar, aterrizar plano).</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>HUD de la carrera</h3>
+            <ul>
+              <li><b>Pausa</b> arriba a la izquierda (la esquina derecha queda libre para World App).</li>
+              <li><b>Tiempo</b> en <code>MM:SS.mmm</code> con dígitos de ancho fijo, para que no baile.</li>
+              <li><b>Chip de parcial</b> al cruzar un checkpoint: verde si vas mejor que tu mejor tiempo, rojo si peor.</li>
+              <li><b>Tres checkpoints</b> (casillas) y una barra de progreso con la meta a cuadros.</li>
+              <li><b>Sin marcador de posición</b> durante la carrera: solo tú contra el reloj.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ IDENTITY -->
+      <section id="identidad">
+        <h2>Identidad visual</h2>
+        <p class="lede">
+          Paleta muestreada de tu esquema (azul noche, amarillo de acción, verde de "hoy", cian de detalle). El píxel del arte mide 2 px
+          CSS; los marcos tienen esquinas recortadas al estilo arcade.
+        </p>
+        <div class="swatches">
+          <div class="sw"><i style="background: #0a0e25"></i><div><b>Fondo</b>#0a0e25</div></div>
+          <div class="sw"><i style="background: #0b1533"></i><div><b>Panel</b>#0b1533</div></div>
+          <div class="sw"><i style="background: #2c50c0"></i><div><b>Línea principal</b>#2c50c0</div></div>
+          <div class="sw"><i style="background: #f1f5ff"></i><div><b>Texto</b>#f1f5ff</div></div>
+          <div class="sw"><i style="background: #8ea0d4"></i><div><b>Texto apagado</b>#8ea0d4</div></div>
+          <div class="sw"><i style="background: #f8af40"></i><div><b>Acción (amarillo)</b>#f8af40</div></div>
+          <div class="sw"><i style="background: #2ee59d"></i><div><b>Hoy / mejora (verde)</b>#2ee59d</div></div>
+          <div class="sw"><i style="background: #35d6ff"></i><div><b>Detalle (cian)</b>#35d6ff</div></div>
+          <div class="sw"><i style="background: #ff4d5a"></i><div><b>Peor / crash</b>#ff4d5a</div></div>
+          <div class="sw"><i style="background: #ffc23e"></i><div><b>Oro</b>#ffc23e</div></div>
+          <div class="sw"><i style="background: #c9d2ee"></i><div><b>Plata</b>#c9d2ee</div></div>
+          <div class="sw"><i style="background: #e08a4a"></i><div><b>Bronce</b>#e08a4a</div></div>
+        </div>
+
+        <div style="margin-top: 26px">
+          <div class="type-row"><small>JERSEY 15 · títulos y números</small><span style="font: 400 44px/1 var(--font-display)">00:39.748 · 12:47:32 · #128</span></div>
+          <div class="type-row"><small>SILKSCREEN · etiquetas pequeñas</small><span style="font: 400 13px var(--font-label); letter-spacing: 0.16em">RACE ENDS IN · LOCKED · TODAY'S RACE</span></div>
+          <div class="type-row"><small>CHAKRA PETCH · texto de interfaz</small><span style="font: 500 18px var(--font-ui)">Speed through the rocks. Master the jumps. Beat the clock.</span></div>
+        </div>
+        <div class="box" style="margin-top: 16px">
+          <p style="margin-top: 0">
+            <b>Nota:</b> probé Pixelify Sans para los números, pero el 2 se confundía con el 8 y el 5 con la S, y en un juego de tiempos eso no vale.
+            Jersey 15 (licencia OFL) se lee bien a todos los tamaños.
+          </p>
+        </div>
+
+        <h3 style="margin-top: 30px; font: 400 20px var(--font-display)">Iconos (trazo cuadrado, malla de 24)</h3>
+        <div class="icons">
+          <div><svg class="i"><use href="#home" /></svg>home</div>
+          <div><svg class="i"><use href="#trophy" /></svg>trophy</div>
+          <div><svg class="i"><use href="#help" /></svg>help</div>
+          <div><svg class="i"><use href="#gear" /></svg>gear</div>
+          <div><svg class="i"><use href="#user" /></svg>user</div>
+          <div><svg class="i"><use href="#gamepad" /></svg>gamepad</div>
+          <div><svg class="i"><use href="#clock" /></svg>clock</div>
+          <div><svg class="i"><use href="#bars" /></svg>bars</div>
+          <div><svg class="i"><use href="#lock" /></svg>lock</div>
+          <div><svg class="i" style="fill: currentColor"><use href="#play" /></svg>play</div>
+          <div><svg class="i"><use href="#pause" /></svg>pause</div>
+          <div><svg class="i"><use href="#volume" /></svg>volume</div>
+          <div><svg class="i"><use href="#volume-off" /></svg>volume-off</div>
+          <div><svg class="i"><use href="#chevron" /></svg>chevron</div>
+          <div><svg class="i"><use href="#check" /></svg>check</div>
+          <div><svg class="i"><use href="#flag" /></svg>flag</div>
+          <div><svg class="i"><use href="#calendar" /></svg>calendar</div>
+          <div><svg class="i"><use href="#refresh" /></svg>refresh</div>
+          <div><svg class="i"><use href="#share" /></svg>share</div>
+          <div><svg class="i"><use href="#wifi-off" /></svg>wifi-off</div>
+          <div><svg class="i"><use href="#alert" /></svg>alert</div>
+          <div><svg class="i"><use href="#lean-back" /></svg>lean-back</div>
+          <div><svg class="i"><use href="#lean-fwd" /></svg>lean-fwd</div>
+          <div><svg class="i"><use href="#brake" /></svg>brake</div>
+          <div><svg class="i"><use href="#gas" /></svg>gas</div>
+          <div><svg class="i"><use href="#ring" /></svg>ring</div>
+          <div><svg class="i"><use href="#crown" /></svg>crown</div>
+        </div>
+      </section>
+
+      <!-- ============================================================ SPRITES -->
+      <section id="sprites">
+        <h2>Sprites y mapas</h2>
+        <p class="lede">
+          Todo el arte de esta pasada lo dibuja código (<code>tools/art</code>), sin dependencias, con el mismo resultado cada vez. Sirve para
+          ver el estilo y el encaje en pantalla; cuando tengas arte final, lo cambiamos archivo a archivo sin tocar las pantallas.
+        </p>
+
+        <div class="sprites">
+          <figure><img src="art/bike/ride.png" width="160" height="120" alt="" />ride</figure>
+          <figure><img src="art/bike/lean-back.png" width="160" height="120" alt="" />lean back</figure>
+          <figure><img src="art/bike/lean-forward.png" width="160" height="120" alt="" />lean forward</figure>
+<figure><img src="art/bike/ragdoll-0.png" width="80" height="80" alt="" />ragdoll 0</figure>
+          <figure><img src="art/bike/ragdoll-1.png" width="80" height="80" alt="" />ragdoll 1</figure>
+          <figure><img src="art/bike/ragdoll-2.png" width="80" height="80" alt="" />ragdoll 2</figure>
+          <figure><img src="art/bike/ragdoll-3.png" width="80" height="80" alt="" />ragdoll 3</figure>
+        </div>
+        <div class="sprites">
+          <figure><img src="art/fx/explosion-0.png" width="102" height="102" alt="" />0</figure>
+          <figure><img src="art/fx/explosion-1.png" width="102" height="102" alt="" />1</figure>
+          <figure><img src="art/fx/explosion-2.png" width="102" height="102" alt="" />2</figure>
+          <figure><img src="art/fx/explosion-3.png" width="102" height="102" alt="" />3</figure>
+          <figure><img src="art/fx/explosion-4.png" width="102" height="102" alt="" />4</figure>
+          <figure><img src="art/fx/explosion-5.png" width="102" height="102" alt="" />5</figure>
+          <figure><img src="art/fx/dust-0.png" width="84" height="60" alt="" />dust 0</figure>
+          <figure><img src="art/fx/dust-1.png" width="84" height="60" alt="" />dust 1</figure>
+          <figure><img src="art/fx/dust-2.png" width="84" height="60" alt="" />dust 2</figure>
+          <figure><img src="art/fx/dust-3.png" width="84" height="60" alt="" />dust 3</figure>
+        </div>
+        <div class="sprites">
+          <figure><img src="art/avatars/a0.png" width="48" height="48" alt="" />a0</figure>
+          <figure><img src="art/avatars/a1.png" width="48" height="48" alt="" />a1</figure>
+          <figure><img src="art/avatars/a2.png" width="48" height="48" alt="" />a2</figure>
+          <figure><img src="art/avatars/a3.png" width="48" height="48" alt="" />a3</figure>
+          <figure><img src="art/avatars/a4.png" width="48" height="48" alt="" />a4</figure>
+          <figure><img src="art/avatars/a5.png" width="48" height="48" alt="" />a5</figure>
+          <figure><img src="art/avatars/a6.png" width="48" height="48" alt="" />a6</figure>
+          <figure><img src="art/avatars/a7.png" width="48" height="48" alt="" />a7</figure>
+        </div>
+
+        <h3 style="margin-top: 30px; font: 400 20px var(--font-display)">Los 7 mapas de la semana (nombres y temas provisionales)</h3>
+        <div class="maps">
+          <div class="map"><img src="art/thumbs/map-1-sunset-canyon.png" alt="" /><div><b>MON · Sunset Canyon</b>Speed through the rocks. Master the jumps. Beat the clock.<span class="lvl">DIFICULTAD <i class="on"></i><i></i><i></i><i></i><i></i></span></div></div>
+          <div class="map"><img src="art/thumbs/map-2-coral-coast.png" alt="" /><div><b>TUE · Coral Coast</b>Ride the shoreline. Do not touch the water.<span class="lvl">DIFICULTAD <i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></div></div>
+          <div class="map"><img src="art/thumbs/map-3-emerald-woods.png" alt="" /><div><b>WED · Emerald Woods</b>Roots, logs and long jumps between the pines.<span class="lvl">DIFICULTAD <i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></div></div>
+          <div class="map"><img src="art/thumbs/map-4-steel-yard.png" alt="" /><div><b>THU · Steel Yard</b>Cranes, containers and tight landings.<span class="lvl">DIFICULTAD <i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></div></div>
+          <div class="map"><img src="art/thumbs/map-5-magma-ridge.png" alt="" /><div><b>FRI · Magma Ridge</b>Hot rock. Cold nerves.<span class="lvl">DIFICULTAD <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div></div>
+          <div class="map"><img src="art/thumbs/map-6-frost-peak.png" alt="" /><div><b>SAT · Frost Peak</b>Slippery slopes and huge air.<span class="lvl">DIFICULTAD <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div></div>
+          <div class="map"><img src="art/thumbs/map-7-orbit-circuit.png" alt="" /><div><b>SUN · Orbit Circuit</b>The final race of the week.<span class="lvl">DIFICULTAD <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div></div>
+        </div>
+      </section>
+
+      <!-- ============================================================ COMPONENTS -->
+      <section id="componentes">
+        <h2>Componentes</h2>
+        <p class="lede">Los mismos estilos que usan las pantallas, en vivo.</p>
+        <div class="grid two">
+          <div class="demo">
+            <button class="btn btn-primary"><svg viewBox="0 0 24 24"><use href="#play" /></svg>PLAY NOW</button>
+            <button class="btn btn-secondary notch" style="margin-bottom: 14px"><svg class="i" style="width: 22px; height: 22px; color: #7f9bff"><use href="#bars" /></svg>VIEW LEADERBOARD</button>
+            <button class="btn btn-ghost">GHOST BUTTON</button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; align-items: center">
+              <!-- PLACEHOLDER: replace with World's official "human" badge asset. Do not restyle. -->
+              <span class="human notch"><svg class="i"><use href="#ring" /></svg>human</span>
+              <span class="pill" style="border-color: #145a48; color: var(--green)">CP 2 −0.412</span>
+              <span class="pill" style="border-color: #6b2230; color: var(--red)">CP 2 +0.312</span>
+            </div>
+          </div>
+          <div class="demo" style="width: 100%">
+            <div class="days">
+              <div class="tile today notch"><div class="d">MON</div><div class="th"><img class="pix" src="art/thumbs/map-1-sunset-canyon.png" alt="" /></div><div class="n">MAP 1</div><div class="s">TODAY</div></div>
+              <div class="tile locked notch"><div class="d">TUE</div><div class="th"><img class="pix" src="art/thumbs/map-2-coral-coast.png" alt="" /><div class="lock"><i><svg class="i"><use href="#lock" /></svg></i></div></div><div class="n">MAP 2</div><div class="s">LOCKED</div></div>
+              <div class="tile closed notch"><div class="d">SUN</div><div class="th"><img class="pix" src="art/thumbs/map-7-orbit-circuit.png" alt="" /></div><div class="n">MAP 7</div><div class="s">CLOSED</div></div>
+              <div class="tile completed notch"><span class="check"><svg class="i"><use href="#check" /></svg></span><div class="d">MON</div><div class="th"><img class="pix" src="art/thumbs/map-1-sunset-canyon.png" alt="" /></div><div class="n">MAP 1</div><div class="s">DONE</div></div>
+            </div>
+            <p style="margin-top: 12px; font-size: 12px; color: var(--muted)">Estados de la casilla: hoy (verde, brillo), bloqueada, cerrada (gris; leaderboard congelado), completada (marca dorada).</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ DECISIONS -->
+      <section id="decisiones">
+        <h2>Decisiones y lo que sigue abierto</h2>
+        <p class="lede">El 24-09 dijiste "haz lo recomendado" sobre lo que te dejé el 20-09. Quedó así (detalle en <code>docs/DECISIONS.md</code> §1b):</p>
+        <div class="q">
+          <div class="box"><div class="id">B2</div><div><h3>Layout de gameplay <span class="tag ok">DECIDIDO</span></h3><p>Se construyen los dos. A por defecto, B disponible en Settings. Cuál queda como predeterminado final se confirma jugando el prototipo de la Fase 5.</p></div></div>
+          <div class="box"><div class="id">B3</div><div><h3>Qué pasa al chocar <span class="tag ok">DECIDIDO</span></h3><p>Reaparece en el último checkpoint con el reloj corriendo: el choque cuesta tiempo, no intentos.</p></div></div>
+          <div class="box"><div class="id">A2</div><div><h3>Quién aparece en el ranking <span class="tag ok">DECIDIDO</span></h3><p>Solo humanos verificados salen en el ranking. Quien no se ha verificado puede jugar en modo práctica, sin ranking (pantalla "Verify").</p></div></div>
+        </div>
+        <p class="lede" style="margin-top: 28px">Sigue abierto (ninguna bloquea el trabajo):</p>
+        <div class="q">
+          <div class="box"><div class="id">A5</div><div><h3>Campeón semanal</h3><p>Sigue pendiente la fórmula. La pantalla "Week results" solo fija el diseño. No voy a inventarla.</p></div></div>
+          <div class="box"><div class="id">C</div><div><h3>Arte</h3><p>Este arte es provisional. Si prefieres un arte final (tuyo o de un artista), cada archivo de <code>design/art</code> se reemplaza por otro del mismo tamaño y las pantallas no cambian.</p></div></div>
+        </div>
+      </section>
+
+      <footer>
+        Regenerar arte: <code>node tools/art/generate.mjs</code> · Regenerar capturas: <code>node tools/design/render.mjs</code> · Ver este tablero:
+        <code>node tools/design/serve.mjs</code>. Texto legal de fuentes en <a class="file" href="fonts/licenses/Jersey15-OFL.txt">design/fonts/licenses</a>.
+      </footer>
+    </div>
+  </body>
+</html>

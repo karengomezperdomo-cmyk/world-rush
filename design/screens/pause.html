@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>RUSH 7 · Pause</title>
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="../ui.css" />
+    <link rel="stylesheet" href="../game.css" />
+  </head>
+  <body>
+    <script src="../icons.js"></script>
+    <div class="phone game">
+      <div class="world"><img class="pix" src="../art/scenes/gameplay-canyon.png" alt="" /></div>
+      <div class="status">
+        <span>9:41</span>
+        <span class="sys"
+          ><svg viewBox="0 0 18 12"><use href="#signal" /></svg
+          ><svg viewBox="0 0 17 12"><use href="#wifi" /></svg
+          ><svg viewBox="0 0 27 12"><use href="#battery" /></svg
+        ></span>
+      </div>
+      <div class="scrim heavy"></div>
+
+      <div class="modal notch" style="top: 150px">
+        <div class="eyebrow">MAP 1 · SUNSET CANYON</div>
+        <div class="banner" style="margin: 10px 0 16px">PAUSED</div>
+        <div class="stack">
+          <div class="row-kv notch"><span class="k">TIME</span><span class="v">00:23.481</span></div>
+          <div class="row-kv notch"><span class="k">YOUR BEST TODAY</span><span class="v gold">00:41.230</span></div>
+        </div>
+        <div class="stack" style="margin-top: 18px">
+          <button class="btn btn-primary"><svg viewBox="0 0 24 24"><use href="#play" /></svg>RESUME</button>
+          <button class="btn btn-secondary notch"><svg class="i" style="width: 22px; height: 22px; color: #7f9bff"><use href="#refresh" /></svg>RESTART RUN</button>
+          <button class="btn btn-ghost">QUIT TO HOME</button>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 12px; margin-top: 10px">
+          <div class="round-btn notch"><svg class="i"><use href="#volume" /></svg></div>
+          <div class="round-btn notch" style="opacity: 0.55"><svg class="i"><use href="#volume-off" /></svg></div>
+        </div>
+        <p class="hint" style="margin-top: 12px">Pausing never stops the daily clock.<br />RACE ENDS IN <b style="color: var(--text)">12:47:32</b></p>
+      </div>
+      <div class="homebar"></div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>RUSH 7 · Home</title>
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="../ui.css" />
+    <style>
+      /* Home only: tighter vertical rhythm so everything clears the tab bar */
+      .week-head {
+        padding-top: 8px;
+        padding-bottom: 6px;
+      }
+      .days {
+        row-gap: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="../icons.js"></script>
+    <div class="phone">
+      <div class="status">
+        <span>9:41</span>
+        <span class="sys"
+          ><svg viewBox="0 0 18 12"><use href="#signal" /></svg
+          ><svg viewBox="0 0 17 12"><use href="#wifi" /></svg
+          ><svg viewBox="0 0 27 12"><use href="#battery" /></svg
+        ></span>
+      </div>
+
+      <header class="appbar">
+        <img class="logo pix" src="../art/logo/rush7.png" alt="RUSH 7" />
+        <div class="user-chip notch">
+          <img class="avatar pix" src="../art/avatars/a3.png" alt="" />
+          <span class="user-name">Sunshine</span>
+          <!-- PLACEHOLDER: replace with World's official "human" badge asset (icon + lowercase "human"). Do not restyle. -->
+          <span class="human notch"><svg class="i"><use href="#ring" /></svg>human</span>
+          <svg class="i" style="width: 14px; height: 14px; color: var(--muted)"><use href="#chevron" /></svg>
+        </div>
+      </header>
+
+      <section class="hero notch glow">
+        <div class="art">
+          <img class="pix" src="../art/scenes/hero-sunset-canyon.png" alt="" />
+          <div class="hero-copy">
+            <div class="kicker">TODAY'S RACE</div>
+            <div class="day"><svg class="i"><use href="#calendar" /></svg>MONDAY</div>
+            <div class="map-no">MAP 1</div>
+            <div class="map-name">SUNSET CANYON</div>
+            <p class="blurb">Speed through the rocks.<br />Master the jumps.<br />Beat the clock.</p>
+          </div>
+          <div class="clock notch">
+            <svg class="i"><use href="#clock" /></svg>
+            <div>
+              <div class="l">RACE ENDS IN</div>
+              <div class="t">12:47:32</div>
+            </div>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn btn-primary"><svg viewBox="0 0 24 24"><use href="#play" /></svg>PLAY NOW</button>
+          <button class="btn btn-secondary notch"><svg class="i" style="width: 22px; height: 22px; color: #7f9bff"><use href="#bars" /></svg>VIEW LEADERBOARD</button>
+        </div>
+      </section>
+
+      <section class="week-head">
+        <div>
+          <h2>WEEK 1</h2>
+          <div class="dates">SEP 15 – SEP 21</div>
+        </div>
+        <div class="trophy-chip notch">
+          <svg class="i"><use href="#trophy" /></svg>
+          <div>7 MAPS · 7 CHALLENGES<br /><b>1 CHAMPION</b></div>
+        </div>
+      </section>
+
+      <section class="days">
+        <div class="tile today notch">
+          <div class="d">MON</div>
+          <div class="th"><img class="pix" src="../art/thumbs/map-1-sunset-canyon.png" alt="" /></div>
+          <div class="n">MAP 1</div>
+          <div class="s">TODAY</div>
+        </div>
+        <div class="tile locked notch">
+          <div class="d">TUE</div>
+          <div class="th">
+            <img class="pix" src="../art/thumbs/map-2-coral-coast.png" alt="" />
+            <div class="lock"><i><svg class="i"><use href="#lock" /></svg></i></div>
+          </div>
+          <div class="n">MAP 2</div>
+          <div class="s">LOCKED</div>
+        </div>
+        <div class="tile locked notch">
+          <div class="d">WED</div>
+          <div class="th">
+            <img class="pix" src="../art/thumbs/map-3-emerald-woods.png" alt="" />
+            <div class="lock"><i><svg class="i"><use href="#lock" /></svg></i></div>
+          </div>
+          <div class="n">MAP 3</div>
+          <div class="s">LOCKED</div>
+        </div>
+        <div class="tile locked notch">
+          <div class="d">THU</div>
+          <div class="th">
+            <img class="pix" src="../art/thumbs/map-4-steel-yard.png" alt="" />
+            <div class="lock"><i><svg class="i"><use href="#lock" /></svg></i></div>
+          </div>
+          <div class="n">MAP 4</div>
+          <div class="s">LOCKED</div>
+        </div>
+        <div class="tile locked notch">
+          <div class="d">FRI</div>
+          <div class="th">
+            <img class="pix" src="../art/thumbs/map-5-magma-ridge.png" alt="" />
+            <div class="lock"><i><svg class="i"><use href="#lock" /></svg></i></div>
+          </div>
+          <div class="n">MAP 5</div>
+          <div class="s">LOCKED</div>
+        </div>
+        <div class="tile locked notch">
+          <div class="d">SAT</div>
+          <div class="th">
+            <img class="pix" src="../art/thumbs/map-6-frost-peak.png" alt="" />
+            <div class="lock"><i><svg class="i"><use href="#lock" /></svg></i></div>
+          </div>
+          <div class="n">MAP 6</div>
+          <div class="s">LOCKED</div>
+        </div>
+        <div class="tile locked notch">
+          <div class="d">SUN</div>
+          <div class="th">
+            <img class="pix" src="../art/thumbs/map-7-orbit-circuit.png" alt="" />
+            <div class="lock"><i><svg class="i"><use href="#lock" /></svg></i></div>
+          </div>
+          <div class="n">MAP 7</div>
+          <div class="s">LOCKED</div>
+        </div>
+      </section>
+
+      <!-- 4 tabs. The REWARDS tab (mock) stays hidden behind a feature flag until it is real (decision A7). -->
+      <nav class="tabbar">
+        <div class="tab on"><svg class="i"><use href="#home" /></svg>HOME</div>
+        <div class="tab"><svg class="i"><use href="#trophy" /></svg>LEADERBOARD</div>
+        <div class="tab"><svg class="i"><use href="#help" /></svg>HOW TO PLAY</div>
+        <div class="tab"><svg class="i"><use href="#gear" /></svg>SETTINGS</div>
+      </nav>
+      <div class="homebar"></div>
+    </div>
+  </body>
+</html>

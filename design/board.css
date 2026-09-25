@@ -1,0 +1,335 @@
+/* RUSH 7 design board: a plain static page that gathers every mock, sprite and token in one place. */
+html {
+  scroll-behavior: smooth;
+}
+body {
+  background: #070a1a;
+  color: var(--text);
+  font-family: var(--font-ui);
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+header.top {
+  padding: 36px 0 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #14224f;
+}
+header.top .logo {
+  height: 72px;
+}
+header.top .meta {
+  max-width: 560px;
+}
+header.top h1 {
+  font: 400 34px/1.1 var(--font-display);
+  letter-spacing: 0.03em;
+}
+header.top p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.pill {
+  display: inline-block;
+  padding: 3px 10px;
+  font: 600 11px var(--font-ui);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border: 2px solid #1b2f6e;
+  background: #0b1533;
+}
+.pill.warn {
+  color: #f0c07a;
+  border-color: #6b5a1e;
+  background: #17130a;
+}
+nav.toc {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 10px 0;
+  background: #070a1af2;
+  border-bottom: 2px solid #14224f;
+  font: 500 12px var(--font-ui);
+  letter-spacing: 0.1em;
+}
+nav.toc a {
+  color: var(--muted);
+  text-decoration: none;
+}
+nav.toc a:hover {
+  color: var(--text);
+}
+section {
+  padding-top: 46px;
+}
+section > h2 {
+  font: 400 28px/1 var(--font-display);
+  letter-spacing: 0.03em;
+}
+section > .lede {
+  margin-top: 8px;
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.grid {
+  display: grid;
+  gap: 24px 20px;
+  margin-top: 22px;
+}
+.grid.shots {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+.grid.two {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+figure.shot {
+  margin: 0;
+}
+figure.shot a {
+  display: block;
+}
+figure.shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 2px solid #1b2f6e;
+  background: #0a0e25;
+}
+figure.shot figcaption {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+figure.shot figcaption b {
+  display: block;
+  color: var(--text);
+  font: 600 13px var(--font-ui);
+  letter-spacing: 0.06em;
+}
+.box {
+  padding: 16px 18px;
+  background: var(--panel);
+  border: 2px solid #1b2f6e;
+}
+.box h3 {
+  font: 400 20px/1.1 var(--font-display);
+  letter-spacing: 0.03em;
+}
+.box p,
+.box li {
+  margin-top: 6px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.box ul {
+  padding-left: 18px;
+}
+.box b {
+  color: var(--text);
+}
+.tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  vertical-align: 2px;
+  font: 600 10px var(--font-ui);
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  background: var(--yellow);
+}
+.tag.ok {
+  background: var(--green);
+}
+.compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 24px;
+  margin-top: 22px;
+}
+.compare .col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+.sw {
+  border: 2px solid #1b2f6e;
+  background: #0b1533;
+  font-size: 12px;
+}
+.sw i {
+  display: block;
+  height: 54px;
+}
+.sw div {
+  padding: 6px 8px;
+  color: var(--muted);
+}
+.sw b {
+  display: block;
+  color: var(--text);
+  font-weight: 600;
+}
+.type-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px 28px;
+  padding: 14px 0;
+  border-bottom: 2px solid #14224f;
+}
+.type-row small {
+  flex: none;
+  width: 190px;
+  font: 500 11px var(--font-ui);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.icons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+.icons div {
+  padding: 12px 6px 8px;
+  text-align: center;
+  background: var(--panel);
+  border: 2px solid #14224f;
+  font: 400 8.5px var(--font-label);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.icons svg {
+  display: block;
+  margin: 0 auto 8px;
+  width: 30px;
+  height: 30px;
+  color: #cdd8ff;
+}
+.sprites {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 22px;
+  align-items: flex-end;
+}
+.sprites figure {
+  margin: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+.sprites img {
+  display: block;
+  margin: 0 auto 6px;
+  background: #0d1230;
+  border: 2px solid #14224f;
+  image-rendering: pixelated;
+}
+.maps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+.map {
+  background: var(--panel);
+  border: 2px solid #1b2f6e;
+}
+.map img {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+.map div {
+  padding: 8px 12px 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.map b {
+  display: block;
+  color: var(--text);
+  font: 400 19px/1.1 var(--font-display);
+  letter-spacing: 0.03em;
+}
+.map .lvl {
+  margin-top: 4px;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  font: 500 10px var(--font-ui);
+  letter-spacing: 0.1em;
+}
+.map .lvl i {
+  width: 12px;
+  height: 8px;
+  background: #1b2f6e;
+}
+.map .lvl i.on {
+  background: var(--yellow);
+}
+.demo {
+  width: 350px;
+  max-width: 100%;
+  padding: 18px;
+  background: linear-gradient(180deg, #0f1638, #0a0e25);
+  border: 2px solid #14224f;
+}
+.demo .btn {
+  margin-bottom: 14px;
+}
+.demo .days {
+  padding: 0;
+  justify-content: flex-start;
+}
+.q {
+  margin-top: 22px;
+  display: grid;
+  gap: 12px;
+}
+.q .box {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.q .id {
+  font: 400 26px/1 var(--font-display);
+  color: var(--yellow);
+}
+footer {
+  margin-top: 60px;
+  padding-top: 18px;
+  border-top: 2px solid #14224f;
+  color: var(--faint);
+  font-size: 12px;
+}
+a.file {
+  color: var(--cyan);
+}

@@ -1,0 +1,37 @@
+{
+  "name": "world-rush",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Daily motorcycle time-trial Mini App for World App (public name: RUSH 7 - provisional; codename: world-rush)",
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @worldrush/web dev",
+    "build": "pnpm --filter @worldrush/web build",
+    "typecheck": "pnpm -r --if-present run typecheck && tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "guards": "node scripts/check-forbidden-apis.mjs && node scripts/check-public-env.mjs",
+    "db:generate": "pnpm --filter @worldrush/db generate",
+    "check": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm guards && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "^16.3.5",
+    "@types/node": "^24.13.6",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
+    "playwright-core": "^1.63.0",
+    "prettier": "^3.9.8",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.1"
+  }
+}

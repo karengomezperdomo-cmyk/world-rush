@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>RUSH 7 · Crash and respawn</title>
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="../ui.css" />
+    <link rel="stylesheet" href="../game.css" />
+  </head>
+  <body>
+    <script src="../icons.js"></script>
+    <div class="phone game">
+      <div class="world"><img class="pix" src="../art/scenes/gameplay-canyon-crash.png" alt="" /></div>
+
+      <div class="status">
+        <span>9:41</span>
+        <span class="sys"
+          ><svg viewBox="0 0 18 12"><use href="#signal" /></svg
+          ><svg viewBox="0 0 17 12"><use href="#wifi" /></svg
+          ><svg viewBox="0 0 27 12"><use href="#battery" /></svg
+        ></span>
+      </div>
+
+      <div class="hud-top">
+        <div class="round-btn notch"><svg class="i"><use href="#pause" /></svg></div>
+        <div>
+          <div class="timer notch">
+            <div class="l">TIME · STILL RUNNING</div>
+            <div class="t">00:31<small>.902</small></div>
+          </div>
+          <div class="hud-sub">
+            <span class="chip bad notch">CRASH ×2</span>
+            <span class="cp-pips">
+              <span class="pip done notch"><svg class="i"><use href="#check" /></svg></span>
+              <span class="pip next notch"></span>
+              <span class="pip notch"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="track notch">
+        <div class="fill" style="width: 47%"></div>
+        <i class="mk" style="left: 25%"></i><i class="mk" style="left: 50%"></i><i class="mk" style="left: 75%"></i>
+        <i class="me" style="left: 47%"></i>
+        <i class="goal"></i>
+      </div>
+
+      <div class="toast notch" style="top: 250px; width: 300px">
+        <div class="h">CRASH!</div>
+        <div class="p">RESPAWN AT CHECKPOINT 1</div>
+        <div style="margin: 10px 0 2px; height: 6px; background: #3a0f1c; position: relative">
+          <i style="position: absolute; left: 0; top: 0; bottom: 0; width: 62%; background: var(--red)"></i>
+        </div>
+        <div class="p" style="margin-top: 6px; color: #9d7d86">THE CLOCK KEEPS RUNNING</div>
+      </div>
+
+      <div class="pads-a" style="opacity: 0.42">
+        <div class="pad lean p-back notch"><svg class="i"><use href="#lean-back" /></svg><span>LEAN BACK</span></div>
+        <div class="pad lean p-fwd notch"><svg class="i"><use href="#lean-fwd" /></svg><span>LEAN FWD</span></div>
+        <div class="pad brake p-brake notch"><svg class="i"><use href="#brake" /></svg><span>BRAKE</span></div>
+        <div class="pad gas p-gas notch"><svg class="i"><use href="#gas" /></svg><span>GAS</span></div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+  </body>
+</html>

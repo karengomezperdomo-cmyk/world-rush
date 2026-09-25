@@ -1,0 +1,579 @@
+/* RUSH 7: in-game HUD, control pads, overlays. Loaded by the gameplay / crash / pause / finish mocks. */
+
+/* the world fills the whole phone; HUD + controls float on top */
+.world {
+  position: absolute;
+  inset: 0;
+  z-index: 0 !important;
+}
+.world img {
+  display: block;
+  width: 390px;
+  height: 844px;
+}
+.phone.game::before {
+  display: none;
+}
+.phone.game > .world ~ * {
+  z-index: 5;
+}
+
+/* ---------- HUD ---------- */
+.hud-top {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--safe-top);
+  padding: 6px 14px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.round-btn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: #060d1bcc;
+  --nb: #26429b;
+  margin: 2px;
+}
+.round-btn svg {
+  width: 22px;
+  height: 22px;
+  color: #dfe7ff;
+}
+.timer {
+  margin-left: 8px;
+  padding: 6px 12px 6px 10px;
+  background: #060d1bd9;
+  --nb: #31408a;
+  min-width: 152px;
+}
+.timer .l {
+  font: 400 8.5px var(--font-label);
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.timer .t {
+  margin-top: 2px;
+  font: 400 40px/1 var(--font-display);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 0 #10183c;
+}
+.timer .t small {
+  font-size: 28px;
+  color: #b6c4f6;
+}
+.hud-sub {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  background: #060d1bcc;
+  --nb: #1b2f6e;
+  font: 600 11px var(--font-ui);
+  letter-spacing: 0.06em;
+  margin: 2px;
+  white-space: nowrap;
+}
+.chip b {
+  font-weight: 700;
+}
+.chip.good {
+  color: var(--green);
+  --nb: #145a48;
+}
+.chip.bad {
+  color: var(--red);
+  --nb: #6b2230;
+}
+.chip.gold {
+  color: var(--gold);
+  --nb: #6b5a1e;
+}
+.chip .i {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
+}
+.cp-pips {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.pip {
+  width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+  background: #0b1533;
+  --nb: #26429b;
+  color: transparent;
+  margin: 2px;
+}
+.pip.done {
+  background: var(--green);
+  --nb: #127a55;
+  color: var(--ink);
+}
+.pip.next {
+  background: #0b1533;
+  --nb: var(--yellow);
+}
+.pip svg {
+  width: 9px;
+  height: 9px;
+  stroke-width: 4;
+}
+
+/* course progress strip */
+.track {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: calc(var(--safe-top) + 122px);
+  height: 8px;
+  background: #060d1bcc;
+  --nb: #1b2f6e;
+  margin: 2px;
+}
+.track .fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #2c50c0, #35d6ff);
+}
+.track .mk {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 16px;
+  background: #e8ecff88;
+}
+.track .me {
+  position: absolute;
+  top: -5px;
+  width: 10px;
+  height: 18px;
+  margin-left: -5px;
+  background: var(--yellow);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.track .goal {
+  position: absolute;
+  right: -3px;
+  top: -6px;
+  width: 12px;
+  height: 20px;
+  background:
+    conic-gradient(#fff 25%, #10183c 0 50%, #fff 0 75%, #10183c 0) 0 0 / 6px 6px;
+  box-shadow: 0 0 0 2px #10183c;
+}
+
+/* ---------- control pads ---------- */
+.pad {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #060d1bb3;
+  --nb: #26429b;
+  color: #dfe7ff;
+  margin: 2px;
+}
+.pad svg {
+  width: 34px;
+  height: 34px;
+}
+.pad span {
+  font: 400 9px var(--font-label);
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.pad.gas {
+  background: #2a1a08d9;
+  --nb: var(--yellow);
+  color: var(--yellow-hi);
+}
+.pad.gas span {
+  color: #f0c07a;
+}
+.pad.brake {
+  --nb: #b0463a;
+  color: #ff9b8a;
+}
+.pad.lean {
+  --nb: #2c6fd0;
+  color: #9cd1ff;
+}
+.pad.down {
+  background: #f8af40e6;
+  color: var(--ink);
+  filter: drop-shadow(0 0 10px #f8af4099);
+  transform: translateY(2px);
+}
+.pad.down span {
+  color: #4a2d0a;
+}
+.pad.down.lean {
+  background: #35d6ffe0;
+  --nb: #b8f0ff;
+  filter: drop-shadow(0 0 10px #35d6ff99);
+}
+
+.pads-a,
+.pads-b {
+  position: absolute;
+  inset: 0;
+  z-index: 6 !important;
+  pointer-events: none;
+}
+.pads-a .pad,
+.pads-b .pad {
+  pointer-events: auto;
+}
+
+/* variant A: 4 buttons floating over the lower part of the world (left cluster 12..174, right cluster 204..378) */
+.pads-a .pad {
+  width: 78px;
+  height: 78px;
+  bottom: 44px;
+}
+.pads-a .p-back {
+  left: 12px;
+}
+.pads-a .p-fwd {
+  left: 96px;
+}
+.pads-a .p-brake {
+  left: 204px;
+}
+.pads-a .p-gas {
+  left: 288px;
+  width: 90px;
+  height: 90px;
+  bottom: 38px;
+}
+.pads-a .p-gas svg {
+  width: 40px;
+  height: 40px;
+}
+
+/* variant B: 4:3 window on top, tall pads underneath (nothing covers the world) */
+.window {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 136px;
+  height: 292px;
+  border-top: 2px solid var(--line);
+  border-bottom: 2px solid var(--line);
+  overflow: hidden;
+}
+.window img {
+  display: block;
+  width: 390px;
+  height: 292px;
+}
+.panel-b {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 430px;
+  bottom: 0;
+  background: linear-gradient(180deg, #0a0e25, #070a1d);
+}
+.pads-b .pad {
+  top: 476px;
+  height: 288px;
+  gap: 10px;
+}
+.pads-b .pad svg {
+  width: 40px;
+  height: 40px;
+}
+.pads-b .p-back {
+  left: 10px;
+  width: 84px;
+}
+.pads-b .p-fwd {
+  left: 100px;
+  width: 84px;
+}
+.pads-b .p-brake {
+  left: 206px;
+  width: 70px;
+}
+.pads-b .p-gas {
+  left: 282px;
+  width: 98px;
+}
+.pads-b .p-gas svg {
+  width: 48px;
+  height: 48px;
+}
+.strip-b {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 436px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font: 500 11px var(--font-ui);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* ---------- overlays / modals ---------- */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: #04061099;
+  z-index: 8 !important;
+}
+.scrim.heavy {
+  background: #040610d9;
+}
+.modal {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  z-index: 10 !important;
+  background: var(--panel);
+  --nb: var(--line);
+  padding: 18px 16px 16px;
+  filter: drop-shadow(0 0 14px #3b6bff44);
+}
+.banner {
+  text-align: center;
+  font: 400 48px/1 var(--font-display);
+  letter-spacing: 0.04em;
+  text-shadow:
+    0 4px 0 #1a1030,
+    0 0 18px #0008;
+}
+.banner.gold {
+  background: linear-gradient(#ffe27a, #ff9a2a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 #2a0f1a);
+}
+.banner.red {
+  color: var(--red);
+  text-shadow:
+    0 4px 0 #2a0b14,
+    0 0 18px #ff4d5a55;
+}
+.eyebrow {
+  text-align: center;
+  font: 400 10px var(--font-label);
+  letter-spacing: 0.18em;
+  color: var(--cyan);
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.row-kv {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: #081027;
+  --nb: #14224f;
+  margin: 2px;
+}
+.row-kv .k {
+  font: 500 11px var(--font-ui);
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+.row-kv .v {
+  font: 400 24px/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+.row-kv .v.gold {
+  color: var(--gold);
+}
+.row-kv .v.green {
+  color: var(--green);
+}
+.big-time {
+  text-align: center;
+  font: 400 66px/1 var(--font-display);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 3px 0 #10183c;
+}
+.big-time small {
+  font-size: 42px;
+  color: #b6c4f6;
+}
+.ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 30px;
+  margin: 2px;
+  background: linear-gradient(#ffcb62, #f39a34);
+  --nb: var(--yellow-lo);
+  color: var(--ink);
+  font: 400 18px var(--font-display);
+  letter-spacing: 0.1em;
+}
+.ribbon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 3;
+}
+.split-row {
+  display: flex;
+  justify-content: space-between;
+  font: 500 12px var(--font-ui);
+  letter-spacing: 0.06em;
+  padding: 4px 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.split-row b {
+  color: var(--text);
+  font-weight: 600;
+}
+.split-row .good {
+  color: var(--green);
+}
+.split-row .bad {
+  color: var(--red);
+}
+.hint {
+  text-align: center;
+  font: 400 11px/1.5 var(--font-ui);
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+/* toast used for crash / respawn */
+.toast {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9 !important;
+  padding: 10px 16px;
+  background: #1a0710e6;
+  --nb: #b0344a;
+  text-align: center;
+}
+.toast .h {
+  font: 400 32px/1 var(--font-display);
+  color: var(--red);
+  letter-spacing: 0.06em;
+}
+.toast .p {
+  margin-top: 6px;
+  font: 500 11px var(--font-ui);
+  letter-spacing: 0.1em;
+  color: #ffc4cc;
+}
+
+/* ---------- annotation overlay (rendered only with ?zones) ---------- */
+.zones {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 40 !important;
+  pointer-events: none;
+}
+.show-zones .zones {
+  display: block;
+}
+.zones > * {
+  position: absolute;
+  z-index: 40 !important;
+  font: 500 9px/1.3 var(--font-label);
+  letter-spacing: 0.08em;
+  color: #fff;
+  pointer-events: none;
+}
+.zone-reserved {
+  right: 0;
+  top: 0;
+  width: 104px;
+  height: 100px;
+  border: 2px dashed #ff4d5a;
+  background: #ff4d5a33;
+  padding: 44px 6px 0;
+  text-align: center;
+}
+.zone-safe-top {
+  left: 0;
+  right: 104px;
+  top: 0;
+  height: 47px;
+  border-bottom: 2px dashed #35d6ff;
+  background: #35d6ff1c;
+  padding: 30px 8px 0;
+  text-align: right;
+}
+.zone-safe-bottom {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34px;
+  border-top: 2px dashed #35d6ff;
+  background: #35d6ff1c;
+  padding: 10px 8px 0;
+}
+.zone-thumb {
+  bottom: 30px;
+  height: 150px;
+  border: 2px dashed #2ee59d;
+  background: #2ee59d22;
+  padding: 4px 6px;
+}
+.zone-thumb.l {
+  left: 4px;
+  width: 186px;
+}
+.zone-thumb.r {
+  right: 4px;
+  width: 196px;
+  text-align: right;
+}
+.zone-note {
+  left: 12px;
+  top: 190px;
+  width: 210px;
+  padding: 6px 8px;
+  border: 2px dashed #f8af40;
+  background: #f8af4022;
+}
+
+/* icon variants inside the yellow primary button (the base rule fills icons, which suits the play triangle only) */
+.btn-primary svg.line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linecap: square;
+}
+.banner.gold {
+  text-shadow: none;
+}

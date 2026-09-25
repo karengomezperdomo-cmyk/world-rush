@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>RUSH 7 · States</title>
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="../ui.css" />
+    <link rel="stylesheet" href="../game.css" />
+    <link rel="stylesheet" href="../screens.css" />
+  </head>
+  <body>
+    <script src="../icons.js"></script>
+    <div class="phone">
+      <div class="status">
+        <span>9:41</span>
+        <span class="sys"
+          ><svg viewBox="0 0 18 12"><use href="#signal" /></svg
+          ><svg viewBox="0 0 17 12"><use href="#wifi" /></svg
+          ><svg viewBox="0 0 27 12"><use href="#battery" /></svg
+        ></span>
+      </div>
+
+      <div class="page no-tabs">
+        <div class="title-row">
+          <h1>STATES</h1>
+          <p>LOADING · OFFLINE · ERROR · CLOSED</p>
+        </div>
+
+        <div class="state notch">
+          <div class="ico notch"><div class="spinner"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div style="flex: 1">
+            <h3>LOADING TODAY'S RACE</h3>
+            <div class="skeleton" style="margin-top: 6px"><i style="width: 90%"></i><i style="width: 60%"></i></div>
+          </div>
+        </div>
+
+        <div class="state warn notch">
+          <div class="ico notch"><svg class="i"><use href="#wifi-off" /></svg></div>
+          <div>
+            <h3>NO CONNECTION</h3>
+            <p>Your time can't be sent while you're offline. Reconnect to keep racing.</p>
+            <button class="btn btn-secondary notch"><svg class="i" style="width: 16px; height: 16px"><use href="#refresh" /></svg>RETRY</button>
+          </div>
+        </div>
+
+        <div class="state err notch">
+          <div class="ico notch"><svg class="i"><use href="#alert" /></svg></div>
+          <div>
+            <h3>RUN NOT ACCEPTED</h3>
+            <p>The server couldn't confirm this run, so it doesn't count. Your best time is safe. Try again.</p>
+            <button class="btn btn-secondary notch"><svg class="i" style="width: 16px; height: 16px"><use href="#refresh" /></svg>TRY AGAIN</button>
+          </div>
+        </div>
+
+        <div class="state notch">
+          <div class="ico notch"><svg class="i"><use href="#lock" /></svg></div>
+          <div>
+            <h3>THIS RACE IS OVER</h3>
+            <p>The leaderboard for this map is frozen. Final results stay here for good.</p>
+            <button class="btn btn-secondary notch"><svg class="i" style="width: 16px; height: 16px"><use href="#bars" /></svg>FINAL RESULTS</button>
+          </div>
+        </div>
+
+        <div class="state warn notch">
+          <div class="ico notch"><svg class="i"><use href="#clock" /></svg></div>
+          <div>
+            <h3>RACE CLOSING</h3>
+            <p>Less than a minute left. Runs that finish after the deadline are not counted.</p>
+          </div>
+        </div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+  </body>
+</html>

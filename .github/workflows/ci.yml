@@ -1,0 +1,34 @@
+# Continuous integration. This file is inert until the repository exists on GitHub (decision H2).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      # Reads the pnpm version pinned in package.json ("packageManager").
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # format:check + typecheck + lint + guards (forbidden APIs, secrets) + tests + build
+      - run: pnpm check
+        env:
+          # The build needs no secrets; these only satisfy the environment schema during `next build`.
+          APP_ENV: development
+          NEXT_PUBLIC_APP_ENV: development

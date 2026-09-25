@@ -1,0 +1,225 @@
+{
+  "artPixelInCssPixels": 2,
+  "files": {
+    "bike/ride.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/lean-back.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/lean-forward.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/ragdoll-0.png": {
+      "width": 20,
+      "height": 20
+    },
+    "bike/ragdoll-1.png": {
+      "width": 20,
+      "height": 20
+    },
+    "bike/ragdoll-2.png": {
+      "width": 20,
+      "height": 20
+    },
+    "bike/ragdoll-3.png": {
+      "width": 20,
+      "height": 20
+    },
+    "fx/explosion-0.png": {
+      "width": 34,
+      "height": 34
+    },
+    "fx/explosion-1.png": {
+      "width": 34,
+      "height": 34
+    },
+    "fx/explosion-2.png": {
+      "width": 34,
+      "height": 34
+    },
+    "fx/explosion-3.png": {
+      "width": 34,
+      "height": 34
+    },
+    "fx/explosion-4.png": {
+      "width": 34,
+      "height": 34
+    },
+    "fx/explosion-5.png": {
+      "width": 34,
+      "height": 34
+    },
+    "fx/dust-0.png": {
+      "width": 14,
+      "height": 10
+    },
+    "fx/dust-1.png": {
+      "width": 14,
+      "height": 10
+    },
+    "fx/dust-2.png": {
+      "width": 14,
+      "height": 10
+    },
+    "fx/dust-3.png": {
+      "width": 14,
+      "height": 10
+    },
+    "scenes/hero-sunset-canyon.png": {
+      "width": 175,
+      "height": 183
+    },
+    "scenes/gameplay-canyon.png": {
+      "width": 195,
+      "height": 422
+    },
+    "scenes/gameplay-canyon-crash.png": {
+      "width": 195,
+      "height": 422
+    },
+    "scenes/gameplay-canyon-window.png": {
+      "width": 195,
+      "height": 146
+    },
+    "logo/rush7.png": {
+      "width": 100,
+      "height": 36
+    },
+    "avatars/a0.png": {
+      "width": 12,
+      "height": 12
+    },
+    "avatars/a1.png": {
+      "width": 12,
+      "height": 12
+    },
+    "avatars/a2.png": {
+      "width": 12,
+      "height": 12
+    },
+    "avatars/a3.png": {
+      "width": 12,
+      "height": 12
+    },
+    "avatars/a4.png": {
+      "width": 12,
+      "height": 12
+    },
+    "avatars/a5.png": {
+      "width": 12,
+      "height": 12
+    },
+    "avatars/a6.png": {
+      "width": 12,
+      "height": 12
+    },
+    "avatars/a7.png": {
+      "width": 12,
+      "height": 12
+    },
+    "thumbs/map-1-sunset-canyon.png": {
+      "width": 46,
+      "height": 28
+    },
+    "thumbs/map-2-coral-coast.png": {
+      "width": 46,
+      "height": 28
+    },
+    "thumbs/map-3-emerald-woods.png": {
+      "width": 46,
+      "height": 28
+    },
+    "thumbs/map-4-steel-yard.png": {
+      "width": 46,
+      "height": 28
+    },
+    "thumbs/map-5-magma-ridge.png": {
+      "width": 46,
+      "height": 28
+    },
+    "thumbs/map-6-frost-peak.png": {
+      "width": 46,
+      "height": 28
+    },
+    "thumbs/map-7-orbit-circuit.png": {
+      "width": 46,
+      "height": 28
+    }
+  },
+  "maps": [
+    {
+      "n": 1,
+      "slug": "sunset-canyon",
+      "day": "MON",
+      "name": "Sunset Canyon",
+      "accent": "#ff8a3a",
+      "difficulty": 1,
+      "tagline": "Speed through the rocks. Master the jumps. Beat the clock.",
+      "thumbnail": "thumbs/map-1-sunset-canyon.png"
+    },
+    {
+      "n": 2,
+      "slug": "coral-coast",
+      "day": "TUE",
+      "name": "Coral Coast",
+      "accent": "#3ad0e0",
+      "difficulty": 2,
+      "tagline": "Ride the shoreline. Do not touch the water.",
+      "thumbnail": "thumbs/map-2-coral-coast.png"
+    },
+    {
+      "n": 3,
+      "slug": "emerald-woods",
+      "day": "WED",
+      "name": "Emerald Woods",
+      "accent": "#3aa07a",
+      "difficulty": 2,
+      "tagline": "Roots, logs and long jumps between the pines.",
+      "thumbnail": "thumbs/map-3-emerald-woods.png"
+    },
+    {
+      "n": 4,
+      "slug": "steel-yard",
+      "day": "THU",
+      "name": "Steel Yard",
+      "accent": "#7a8aff",
+      "difficulty": 3,
+      "tagline": "Cranes, containers and tight landings.",
+      "thumbnail": "thumbs/map-4-steel-yard.png"
+    },
+    {
+      "n": 5,
+      "slug": "magma-ridge",
+      "day": "FRI",
+      "name": "Magma Ridge",
+      "accent": "#ff5a2a",
+      "difficulty": 4,
+      "tagline": "Hot rock. Cold nerves.",
+      "thumbnail": "thumbs/map-5-magma-ridge.png"
+    },
+    {
+      "n": 6,
+      "slug": "frost-peak",
+      "day": "SAT",
+      "name": "Frost Peak",
+      "accent": "#8ac8ff",
+      "difficulty": 4,
+      "tagline": "Slippery slopes and huge air.",
+      "thumbnail": "thumbs/map-6-frost-peak.png"
+    },
+    {
+      "n": 7,
+      "slug": "orbit-circuit",
+      "day": "SUN",
+      "name": "Orbit Circuit",
+      "accent": "#a06ad8",
+      "difficulty": 5,
+      "tagline": "The final race of the week.",
+      "thumbnail": "thumbs/map-7-orbit-circuit.png"
+    }
+  ]
+}

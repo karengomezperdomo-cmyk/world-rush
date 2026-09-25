@@ -1,0 +1,23 @@
+{
+  "name": "@worldrush/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@worldcoin/idkit-core": "4.3.0",
+    "@worldcoin/minikit-js": "2.0.3",
+    "@worldrush/db": "workspace:*",
+    "@worldrush/shared": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "viem": "^2.56.8"
+  }
+}

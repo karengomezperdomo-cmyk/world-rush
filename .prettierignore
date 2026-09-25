@@ -1,0 +1,9 @@
+node_modules
+.next
+coverage
+.data
+docs
+pnpm-lock.yaml
+**/migrations
+next-env.d.ts
+design

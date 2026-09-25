@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>RUSH 7 · Gameplay (layout B: 4:3 window + control panel)</title>
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="../ui.css" />
+    <link rel="stylesheet" href="../game.css" />
+  </head>
+  <body>
+    <script src="../icons.js"></script>
+    <div class="phone">
+      <div class="status">
+        <span>9:41</span>
+        <span class="sys"
+          ><svg viewBox="0 0 18 12"><use href="#signal" /></svg
+          ><svg viewBox="0 0 17 12"><use href="#wifi" /></svg
+          ><svg viewBox="0 0 27 12"><use href="#battery" /></svg
+        ></span>
+      </div>
+
+      <div class="hud-top" style="top: 47px">
+        <div class="round-btn notch"><svg class="i"><use href="#pause" /></svg></div>
+        <div>
+          <div class="timer notch">
+            <div class="l">TIME</div>
+            <div class="t">00:23<small>.481</small></div>
+          </div>
+        </div>
+        <div style="margin-top: 4px; display: flex; flex-direction: column; gap: 4px">
+          <span class="chip good notch">CP 2 &nbsp;−0.412</span>
+          <span class="cp-pips" style="margin-left: 2px">
+            <span class="pip done notch"><svg class="i"><use href="#check" /></svg></span>
+            <span class="pip done notch"><svg class="i"><use href="#check" /></svg></span>
+            <span class="pip next notch"></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="window"><img class="pix" src="../art/scenes/gameplay-canyon-window.png" alt="" /></div>
+
+      <div class="panel-b"></div>
+      <div class="strip-b">
+        <span>MAP 1 · SUNSET CANYON</span>
+        <span>BEST 00:41.230</span>
+      </div>
+      <div class="pads-b">
+        <div class="pad lean p-back notch"><svg class="i"><use href="#lean-back" /></svg><span>LEAN BACK</span></div>
+        <div class="pad lean p-fwd notch"><svg class="i"><use href="#lean-fwd" /></svg><span>LEAN FWD</span></div>
+        <div class="pad brake p-brake notch"><svg class="i"><use href="#brake" /></svg><span>BRAKE</span></div>
+        <div class="pad gas p-gas notch down"><svg class="i"><use href="#gas" /></svg><span>GAS</span></div>
+      </div>
+
+      <div class="homebar"></div>
+
+      <div class="zones">
+        <div class="zone-reserved">RESERVED<br />WORLD APP<br />CONTROLS</div>
+        <div class="zone-safe-bottom">SAFE AREA · BOTTOM 34</div>
+        <div class="zone-note" style="top: 448px; left: 10px; width: 372px; height: 24px; padding-top: 4px">
+          THE WORLD IS NEVER COVERED BY A FINGER (390 × 292 · 4:3)
+        </div>
+      </div>
+    </div>
+    <script>
+      if (location.search.includes('zones')) document.querySelector('.phone').classList.add('show-zones');
+    </script>
+  </body>
+</html>
