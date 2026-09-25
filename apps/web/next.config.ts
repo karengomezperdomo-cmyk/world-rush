@@ -1,3 +1,5 @@
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
 
 const config: NextConfig = {
@@ -12,6 +14,13 @@ const config: NextConfig = {
     '@worldrush/game-core',
     '@worldrush/shared',
   ],
+  // In a monorepo, Next's own output-file tracing only looks inside this app's directory by default —
+  // everything imported from `../../packages/*` above falls outside that by design (confirmed via Next's
+  // own docs, "output" config page, "Caveats"). Without this, tracing silently drops those files from the
+  // deployment output, which on Vercel doesn't fail the build (it "succeeds") — it produces a routing
+  // manifest Vercel can't actually serve anything from, so every route 404s in production while working
+  // fine locally. Root two levels up from this file is the monorepo root (pnpm-workspace.yaml).
+  outputFileTracingRoot: join(dirname(fileURLToPath(import.meta.url)), '../..'),
   async headers() {
     return [
       {

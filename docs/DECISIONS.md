@@ -144,7 +144,7 @@ route that mints a session for any wallet address — so it was refused, and Pha
 | `packages/db/scripts/provision.mjs` is plain JavaScript                                      | Node cannot execute this repo's TypeScript sources directly (extensionless imports, which ESM does not resolve), and adding a TS runner for one script is not worth a dependency. It refuses a `localhost` URL, an unknown `APP_ENV`, and any attempt to relabel a database that is already marked as another environment. |
 | The hosted path is **not yet proven against a real database**                                 | `client.test.ts` only covers what is checkable without one (the handle builds, nothing dials out eagerly, `max` is 1). The first real exercise is the Neon database; treat the first deploy as the test.   |
 
-## 1f. Vercel deploy fixed: Next.js 16 + Turbopack production builds 404 on every route (2026-09-25)
+## 1f. Vercel deploy fixed: monorepo output-file tracing, not Turbopack (2026-09-25)
 
 First real Vercel deployment (Phase 4's hosted DB unblocked it) built cleanly, logged the right route list,
 and marked "Ready" — but every route, including the static `/` and `/play`, answered `404 NOT_FOUND` from
@@ -153,29 +153,37 @@ changed nothing. Deployment Protection ("Standard Protection") was briefly suspe
 reading Vercel's own current docs: it explicitly exempts the production domain, which is why the team's
 other World Mini Apps on Vercel never had to touch it.
 
-**Root cause (confirmed via Vercel Community reports, then verified against this repo's own installed
-Next.js CLI, not assumed):** Next.js 16 defaults `next build` to Turbopack, which does not yet emit the
-"Collecting build traces" step — running `next build` locally showed the log jumping straight from
-"Finalizing page optimization" to the route table, with no trace step in between, in both the local build
-and Vercel's own build log. Vercel's Next.js output adapter reads that trace data to wire routes to deployed
-functions/assets; without it, the build "succeeds" but nothing is actually routable.
+**First hypothesis (wrong on its own):** Vercel Community reports describe Next.js 16 defaulting `next
+build` to Turbopack, which skips the "Collecting build traces" step Vercel's output adapter needs. Real
+symptom (the trace step really was missing from both the local and Vercel build logs), but forcing
+`next build --webpack` and redeploying **did not fix production** — still 404 after a clean rebuild. This is
+still applied (harmless, and Turbopack's own trace-step gap for Next 16 is real), but it was not sufifficient
+on its own, so treat it as a secondary hardening, not the fix.
 
-**Fix:** `apps/web/package.json`'s `build` script is now `next build --webpack` (confirmed as a real flag via
-`next build --help` on the installed CLI before using it). `next dev` is untouched and still defaults to
-Turbopack — this bug is build-only, and dev speed is what Turbopack is for. Rebuilding locally with
-`--webpack` showed the "Collecting build traces ..." line appear, and the deployed site started serving
-correctly.
+**Real root cause, found by asking the team's other three World Mini App sessions (each a separate Vercel
+project) what their own setups looked like:** one project on Next 16 + Turbopack, **not** a monorepo, has
+never seen this — which falsified "Turbopack alone breaks Vercel." A second project flagged, from prior
+experience, that this exact failure mode is specifically associated with a monorepo whose Vercel Root
+Directory doesn't match the actual build root. That pointed straight at Next's own docs (`output` config
+page, "Caveats"): **"While tracing in monorepo setups, the project directory is used for tracing by
+default... any files outside of that folder will not be included."** `apps/web` imports
+`packages/auth`, `packages/db`, etc. from outside its own directory, and `outputFileTracingRoot` was never
+set — so Next's file tracing silently dropped them from the deployment output. The build "succeeds" (nothing
+about a missing trace is an error) but Vercel's routing manifest ends up unable to serve anything.
 
-**Side effect this introduced and also fixed:** `packages/game-client/src/physics-loader.ts`'s dynamic
-`import(COMPAT_MODULE_URL)` (a runtime-computed browser URL, not a bundleable module — see that file's own
-comment) had a `turbopackIgnore: true` magic comment, which Turbopack understands but webpack does not; the
-webpack build compiled with a "Critical dependency: the request of a dependency is an expression" warning.
-Switched to `webpackIgnore: true`, which Next's own docs list as supported by **both** bundlers, unlike
-`turbopackIgnore`, which is Turbopack-only. Rebuilding with `--webpack` afterward showed the warning gone.
+**Fix:** `apps/web/next.config.ts` now sets `outputFileTracingRoot` to the monorepo root (two directories up
+from the config file, matching Next's own monorepo example). Confirmed locally, not just by the build
+succeeding: after this, `.next/server/app/**/*.nft.json` trace files reference `packages/auth`,
+`packages/db`, `packages/config`, etc. — before, tracing simply never reached them.
+
+**Lesson for next time:** when three separate, previously-working projects share nothing except "built by
+the same team," asking them what differs is faster than re-deriving the cause alone — the answer here came
+from a peer project's prior experience with this exact class of bug, in one message.
 
 Sources consulted directly (not relied on from memory): [Vercel Community — Next.js 16 deployment shows
 404 despite successful build](https://community.vercel.com/t/next-js-16-deployment-shows-404-not-found-despite-successful-vercel-build/48106),
-[Vercel — Deployment Protection](https://vercel.com/docs/deployment-protection).
+[Vercel — Deployment Protection](https://vercel.com/docs/deployment-protection), Next.js's own `output`
+config docs (`node_modules/next/dist/docs/01-app/03-api-reference/05-config/01-next-config-js/output.md`).
 
 ## 2. Defaults in force (no objection recorded)
 
