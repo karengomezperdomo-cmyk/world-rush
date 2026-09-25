@@ -123,6 +123,27 @@ No replay recording, no server-side re-simulation, no timer/results/pause flow, 
 hand-authored test track that is not "Map 1". The bike also keeps falling past the end of the level after
 finishing, because nothing ends the run yet.
 
+## 1e. Phase 4 (2026-09-25): hosted Postgres, and the repository going up
+
+Triggered by the owner asking to deploy. The deploy turned out to be blocked by the app's own rules, not by
+Vercel: outside development `packages/config` **requires** `DATABASE_URL` to be a hosted Postgres, while
+`apps/web/src/lib/db.ts` **threw if it was set** (no hosted driver yet). The one env combination that would
+have passed (`APP_ENV=development` on a preview deployment) would have published `/api/dev/fake-login`, a
+route that mints a session for any wallet address — so it was refused, and Phase 4 was brought forward.
+
+| Decision / finding                                                                         | Why                                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **H2 answered: private GitHub repo** `karengomezperdomo-cmyk/world-rush`, first commit pushed 2026-09-25 | Nothing was committed at all until now — 221 files lived only on one disk, with no history or backup. CI (`pnpm check`) passed on GitHub's runners, not just locally.                                    |
+| Pushing needed the **`workflow` OAuth scope** added to the owner's `gh` token               | GitHub refuses to let an OAuth token create `.github/workflows/*`. Granted through the device flow. Worth knowing: the owner's own terminal reported `gh` as logged out while it was in fact authenticated — the credential store was reachable from the agent's shell but not from that terminal tab. |
+| **H1a answered: Vercel Hobby, "for now"**                                                    | Free and enough to test. **Not settled**: Hobby's terms are non-commercial and its cron is once a day, and this app is meant to award prizes on a daily rotation (A3). Revisit before real prizes exist.   |
+| **F1a answered: Neon, created from Vercel's Storage tab**                                    | Free tier, and creating it there makes Vercel inject `DATABASE_URL` into the project itself, which removes a manual copy-paste of a credential.                                                            |
+| Driver is **`postgres.js`**, not Neon's own                                                  | Speaks plain Postgres, so changing provider later is a config change rather than a rewrite. `max: 1` on purpose: each serverless invocation gets its own instance, so a bigger pool would not be reused — it would just multiply idle connections. Point `DATABASE_URL` at the provider's *pooled* endpoint. |
+| `Db` widened from `PgliteDatabase<schema>` to the shared **`PgDatabase<PgQueryResultHKT, schema>`** supertype | Both drivers satisfy it, so nothing outside `client.ts` can depend on which one it got — the Phase 1 promise that "the hosted driver is added behind this same type".                                  |
+| **`@worldrush/db` is now the single boundary to the ORM**; `packages/auth` no longer depends on `drizzle-orm` and imports `and/eq/gt/isNull/sql` from `@worldrush/db` | Not stylistic. drizzle-orm declares its drivers as *optional peer dependencies*, so pnpm installs one copy per distinct peer set: adding `postgres` to `packages/db` immediately produced a second copy, and `eq(users.id, …)` in `packages/auth` stopped compiling with "separate declarations of a private property". Funnelling the ORM through one package keeps exactly one copy in every consumer's type graph, whatever drivers get added later. |
+| Migrations on a hosted database are a **separate step** (`pnpm db:provision`), never applied on a request | Concurrent cold starts would race to migrate the same database. `apps/web/src/lib/db.ts` now only *verifies* the environment marker on the hosted path, so a staging build can never quietly talk to the production database. |
+| `packages/db/scripts/provision.mjs` is plain JavaScript                                      | Node cannot execute this repo's TypeScript sources directly (extensionless imports, which ESM does not resolve), and adding a TS runner for one script is not worth a dependency. It refuses a `localhost` URL, an unknown `APP_ENV`, and any attempt to relabel a database that is already marked as another environment. |
+| The hosted path is **not yet proven against a real database**                                 | `client.test.ts` only covers what is checkable without one (the handle builds, nothing dials out eagerly, `max` is 1). The first real exercise is the Neon database; treat the first deploy as the test.   |
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·

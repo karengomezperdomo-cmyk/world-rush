@@ -2,15 +2,20 @@ import { mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
-import { drizzle, type PgliteDatabase } from 'drizzle-orm/pglite';
+import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
+import { drizzle } from 'drizzle-orm/pglite';
 import { migrate } from 'drizzle-orm/pglite/migrator';
+import { drizzle as drizzleHosted } from 'drizzle-orm/postgres-js';
+import { migrate as migrateHosted } from 'drizzle-orm/postgres-js/migrator';
+import postgres from 'postgres';
 import * as schema from './schema';
 
 /**
- * Database handle. Phase 1 supports the embedded PostgreSQL (PGlite) used for local development and
- * tests. The hosted driver (Postgres on Vercel) is added in Phase 4 behind this same type.
+ * Database handle, satisfied by both drivers: the embedded PostgreSQL (PGlite) used for local development
+ * and tests, and the hosted Postgres added in Phase 4. It is deliberately the shared `PgDatabase`
+ * supertype rather than either concrete type, so nothing outside this file can depend on which one it got.
  */
-export type Db = PgliteDatabase<typeof schema>;
+export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 
 // NOT `new URL('../migrations', import.meta.url)`: Next.js's Turbopack production build statically
 // pattern-matches that exact `new URL(literal, import.meta.url)` shape and tries to resolve it as a
@@ -41,5 +46,41 @@ export async function createLocalDb(options: { dataDir?: string } = {}): Promise
 }
 
 export async function applyMigrations(db: Db): Promise<void> {
-  await migrate(db, { migrationsFolder });
+  await migrate(db as Parameters<typeof migrate>[0], { migrationsFolder });
+}
+
+export interface HostedDb {
+  db: Db;
+  client: postgres.Sql;
+  close(): Promise<void>;
+}
+
+/**
+ * Hosted Postgres (Neon, Supabase, or anything else that speaks the wire protocol — `postgres.js` is
+ * driver-agnostic on purpose, so changing provider does not mean rewriting this).
+ *
+ * `max: 1` because this runs in serverless functions: each invocation gets its own short-lived instance,
+ * so a larger pool here would not be reused, it would just multiply idle connections against the provider's
+ * limit. Point `DATABASE_URL` at the provider's *pooled* endpoint for the same reason.
+ *
+ * Migrations are NOT applied here. On a hosted database that is a deliberate, separate step
+ * (`pnpm db:provision`), never something a request path does: concurrent cold starts would race each other,
+ * and a half-finished schema change is not something to discover mid-request.
+ */
+export function createHostedDb(options: {
+  databaseUrl: string;
+  maxConnections?: number;
+}): HostedDb {
+  const client = postgres(options.databaseUrl, {
+    max: options.maxConnections ?? 1,
+    // The default would silently coerce; failing loudly is the house style for anything schema-shaped.
+    onnotice: () => {},
+  });
+  const db = drizzleHosted(client, { schema });
+  return { db, client, close: () => client.end() };
+}
+
+/** Applies migrations to a hosted database. Provisioning/deploy step only — see `createHostedDb`. */
+export async function applyHostedMigrations(db: Db): Promise<void> {
+  await migrateHosted(db as Parameters<typeof migrateHosted>[0], { migrationsFolder });
 }

@@ -1,4 +1,7 @@
 import {
+  and,
+  eq,
+  sql,
   users,
   worldIdVerifications,
   PG_UNIQUE_VIOLATION,
@@ -10,7 +13,6 @@ import {
   type WorldIdEnvironment,
   type WorldIdProtocolVersion,
 } from '@worldrush/shared';
-import { and, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 /**

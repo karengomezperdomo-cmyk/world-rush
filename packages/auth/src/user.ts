@@ -1,5 +1,4 @@
-import { users, type Db } from '@worldrush/db';
-import { sql } from 'drizzle-orm';
+import { sql, users, type Db } from '@worldrush/db';
 
 export interface AuthenticatedUser {
   id: string;

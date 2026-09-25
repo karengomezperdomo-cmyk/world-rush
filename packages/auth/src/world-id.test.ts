@@ -1,6 +1,5 @@
-import { users } from '@worldrush/db';
+import { eq, users } from '@worldrush/db';
 import { createTestDb } from '@worldrush/db/testing';
-import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { callVerifyEndpoint, recordWorldIdVerification, WORLD_ID_CREDENTIAL } from './world-id';
 

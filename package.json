@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "guards": "node scripts/check-forbidden-apis.mjs && node scripts/check-public-env.mjs",
     "db:generate": "pnpm --filter @worldrush/db generate",
+    "db:provision": "pnpm --filter @worldrush/db provision",
     "check": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm guards && pnpm test && pnpm build"
   },
   "devDependencies": {
