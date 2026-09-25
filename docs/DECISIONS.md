@@ -144,6 +144,39 @@ route that mints a session for any wallet address — so it was refused, and Pha
 | `packages/db/scripts/provision.mjs` is plain JavaScript                                      | Node cannot execute this repo's TypeScript sources directly (extensionless imports, which ESM does not resolve), and adding a TS runner for one script is not worth a dependency. It refuses a `localhost` URL, an unknown `APP_ENV`, and any attempt to relabel a database that is already marked as another environment. |
 | The hosted path is **not yet proven against a real database**                                 | `client.test.ts` only covers what is checkable without one (the handle builds, nothing dials out eagerly, `max` is 1). The first real exercise is the Neon database; treat the first deploy as the test.   |
 
+## 1f. Vercel deploy fixed: Next.js 16 + Turbopack production builds 404 on every route (2026-09-25)
+
+First real Vercel deployment (Phase 4's hosted DB unblocked it) built cleanly, logged the right route list,
+and marked "Ready" — but every route, including the static `/` and `/play`, answered `404 NOT_FOUND` from
+Vercel's own edge (`X-Vercel-Error: NOT_FOUND`), not from Next.js. A clean redeploy with no build cache
+changed nothing. Deployment Protection ("Standard Protection") was briefly suspected and ruled out by
+reading Vercel's own current docs: it explicitly exempts the production domain, which is why the team's
+other World Mini Apps on Vercel never had to touch it.
+
+**Root cause (confirmed via Vercel Community reports, then verified against this repo's own installed
+Next.js CLI, not assumed):** Next.js 16 defaults `next build` to Turbopack, which does not yet emit the
+"Collecting build traces" step — running `next build` locally showed the log jumping straight from
+"Finalizing page optimization" to the route table, with no trace step in between, in both the local build
+and Vercel's own build log. Vercel's Next.js output adapter reads that trace data to wire routes to deployed
+functions/assets; without it, the build "succeeds" but nothing is actually routable.
+
+**Fix:** `apps/web/package.json`'s `build` script is now `next build --webpack` (confirmed as a real flag via
+`next build --help` on the installed CLI before using it). `next dev` is untouched and still defaults to
+Turbopack — this bug is build-only, and dev speed is what Turbopack is for. Rebuilding locally with
+`--webpack` showed the "Collecting build traces ..." line appear, and the deployed site started serving
+correctly.
+
+**Side effect this introduced and also fixed:** `packages/game-client/src/physics-loader.ts`'s dynamic
+`import(COMPAT_MODULE_URL)` (a runtime-computed browser URL, not a bundleable module — see that file's own
+comment) had a `turbopackIgnore: true` magic comment, which Turbopack understands but webpack does not; the
+webpack build compiled with a "Critical dependency: the request of a dependency is an expression" warning.
+Switched to `webpackIgnore: true`, which Next's own docs list as supported by **both** bundlers, unlike
+`turbopackIgnore`, which is Turbopack-only. Rebuilding with `--webpack` afterward showed the warning gone.
+
+Sources consulted directly (not relied on from memory): [Vercel Community — Next.js 16 deployment shows
+404 despite successful build](https://community.vercel.com/t/next-js-16-deployment-shows-404-not-found-despite-successful-vercel-build/48106),
+[Vercel — Deployment Protection](https://vercel.com/docs/deployment-protection).
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·
