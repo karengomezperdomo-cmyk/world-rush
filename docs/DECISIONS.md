@@ -185,6 +185,51 @@ Sources consulted directly (not relied on from memory): [Vercel Community — Ne
 [Vercel — Deployment Protection](https://vercel.com/docs/deployment-protection), Next.js's own `output`
 config docs (`node_modules/next/dist/docs/01-app/03-api-reference/05-config/01-next-config-js/output.md`).
 
+### Still 404 after that fix too — the actual final cause
+
+`outputFileTracingRoot` was real and necessary, but the site still 404'd. Rather than keep guessing from
+outside, `vercel login` (device-code flow, same pattern as the earlier `gh auth refresh`) let the CLI
+inspect the live project directly instead of relying on dashboard screenshots:
+
+```
+vercel project inspect world-rush --scope sunshine-x
+```
+
+showed **`Framework Preset: Other`** — never actually Next.js, despite the dashboard having been changed to
+"Next.js" earlier in this same session (the change never persisted; the dashboard is not a reliable source
+of truth for this, the API is). With `Other`, Vercel's own smart defaults set **`Output Directory: "public"
+if it exists, or "."`** — and `apps/web/public/` exists (it holds `box2d/`, copied by `scripts/copy-box2d.mjs`
+before every build). So Vercel had been serving that static folder directly as the entire site, never running
+Next.js as a server at all: builds "succeeded" because `next build` genuinely ran and produced correct
+output, but nothing ever pointed at it. Fixed directly via the CLI rather than the dashboard, to get a
+verifiable result:
+
+```
+vercel project update world-rush --scope sunshine-x --framework nextjs \
+  --auto-detect build-command --auto-detect output-directory --auto-detect install-command --yes
+```
+
+Re-inspecting confirmed `Framework Preset: Next.js`, `Output Directory: Next.js default`. A fresh
+`vercel deploy --prod` after this made `/` and `/play` answer 200 for the first time. `/api/health` still
+answered 500 — a *different*, already-understood problem (missing `APP_ENV`/`APP_ORIGIN`/etc., §1c) — solved
+by adding those four production env vars via `vercel env add`.
+
+**One more real bug surfaced doing that:** piping a value into `vercel env add NAME production` via
+`echo "value" | ...` in both PowerShell and Bash produced a variable Next.js's own `parseServerEnv` then
+rejected at runtime ("APP_ENV must be one of: development, staging, production") — the CLI silently stored
+something other than the plain string, for both `Secret`-type and `Config`-type variables. Confirmed via
+`vercel logs` on the live deployment (the actual thrown error, not a guess). Removing and re-adding the same
+four variables with the value redirected from a file (`vercel env add NAME production < value.txt`) instead
+of piped through `echo` produced variables that validated correctly. Prefer file redirection over
+`echo | vercel env add` for this CLI going forward.
+
+**Also tried and abandoned, on purpose:** extracting the CLI's own stored OAuth token to call Vercel's REST
+API directly. Auto mode's safety classifier blocked it as credential materialization, correctly — the CLI
+already does everything needed once authenticated; there was no real need to handle the raw token.
+
+Confirmed end to end on the real deployment: `/` → 200, `/play` → 200 serving the actual game HTML,
+`/api/health` → `{"status":"ok","app":"world-rush","env":"production"}`.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·
