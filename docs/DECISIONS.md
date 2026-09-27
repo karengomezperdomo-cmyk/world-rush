@@ -66,14 +66,24 @@ None of this blocks the code above; it can happen whenever the owner has a few m
    `NEXT_PUBLIC_WORLD_MINIAPP_ID` (confirmed reaching `MiniKitProvider` in the rendered page). Not committed
    (git-ignored) — app_id is public by design (World ships it to the browser itself), so receiving it in
    chat is fine; it is not a secret like the RP signing key below.
-3. **Still open — which Portal app is the World ID relying party?** Create (or reuse the Mini App above for)
-   **World ID**: this needs an `app_id`, an `rp_id`, and generates a
-   **secret** RP signing key. Put `app_id` in `NEXT_PUBLIC_WORLD_ID_APP_ID`, `rp_id` in `WORLD_ID_RP_ID`, and
-   the signing key in `WORLD_ID_RP_SIGNING_KEY` — that last one is a secret; it only belongs in
-   `apps/web/.env.local` (git-ignored) or, later, the hosting platform's encrypted env store, never in chat,
-   never committed.
-4. That's it for Phase 2 testing (still needs a public URL to open from a phone — decision D2 — before it
-   can run inside World App itself; see the still-PENDING table below).
+3. **Resolved 2026-09-26 — the Mini App hosts its own World ID relying party**, no separate Portal app
+   needed: the Developer Portal's "World ID Configuration" tab, inside the same Mini App, has a
+   "Register relying party" flow that generates `rp_id` and a signing key directly. Set `app_id` in
+   `NEXT_PUBLIC_WORLD_ID_APP_ID` (same value as `NEXT_PUBLIC_WORLD_MINIAPP_ID`), `rp_id` in `WORLD_ID_RP_ID`,
+   signing key in `WORLD_ID_RP_SIGNING_KEY`. All three are now set in both `apps/web/.env.local` and Vercel
+   Production. **No separate registration step was found for the `action` string** (`verify-human`,
+   `packages/auth`'s `WORLD_ID_ACTION`) in the Portal UI — the Store-listing/Verification wizard (steps
+   "Basic information" → … → "Review and confirm") never asks for one, only app-level toggles like "Verified
+   humans only". Confirmed working without one: a real signed RP context (`rp_id`, `nonce`, `signature`) came
+   back correctly from `/api/world-id/sign` against the real Portal-issued key, tested locally via
+   `/api/dev/fake-login` + a real call, not just inspected. If a real device verification ever rejects the
+   action as unrecognized, that would be the first place to look — but nothing found so far requires it.
+4. **The owner's private signing key was pasted directly into chat once** while setting this up (2026-09-26).
+   Declined to rotate it when offered ("no importa, sigamos asi") — the owner's call to make, not a
+   correction to force. If this key is ever rotated for another reason, the "Rotate signer key" button lives
+   on the same World ID Configuration page.
+5. **Phase 4 also shipped the public URL** decision D1 step 4 was waiting on: `https://world-rush.vercel.app`
+   (§1f/§1g). D2 (a real phone with World App) is the only piece of Phase 2 testing left unstarted.
 
 ## 1d. Phase 5 (2026-09-24): physics + render spike — a playable prototype
 
