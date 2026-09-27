@@ -86,6 +86,10 @@ export async function callVerifyEndpoint(
   if (error.success) {
     return { ok: false, code: error.data.code, detail: error.data.detail };
   }
+  // TEMPORARY diagnostic (2026-09-26): the first real verify call returned a 200 this parsed as neither
+  // success nor error — logging the actual body is the only way to see the real shape without guessing
+  // against possibly-stale docs. Remove once the schemas above are confirmed against a real response.
+  console.error('[world-id/verify] unrecognised body:', JSON.stringify(body));
   throw new Error(
     `Unrecognised response from the World ID verify endpoint (HTTP ${response.status}). ` +
       'Its shape may have changed; re-check docs.world.org/api-reference/developer-portal/verify.',
