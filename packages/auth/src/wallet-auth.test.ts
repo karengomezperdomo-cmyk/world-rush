@@ -46,9 +46,11 @@ afterAll(async () => {
 describe('verifyWalletAuthCompletion (against the real verifySiweMessage)', () => {
   it('accepts a correctly formed, correctly signed completion', async () => {
     const { nonce } = await issueNonce(ctx.db);
+    // `domain` is the full origin, not the bare host: confirmed 2026-09-26 against a real World App SIWE
+    // message, which is what caught a real production rejection (see assertExpectedOrigin's comment).
     const completion = await buildSiweCompletion({
       nonce,
-      domain: 'rush7.example.com',
+      domain: ORIGIN,
       uri: ORIGIN,
       chainId: WORLD_CHAIN_ID,
     });
@@ -64,7 +66,7 @@ describe('verifyWalletAuthCompletion (against the real verifySiweMessage)', () =
     const { nonce } = await issueNonce(ctx.db);
     const completion = await buildSiweCompletion({
       nonce,
-      domain: 'rush7.example.com',
+      domain: ORIGIN,
       uri: ORIGIN,
       chainId: WORLD_CHAIN_ID,
     });
@@ -78,7 +80,7 @@ describe('verifyWalletAuthCompletion (against the real verifySiweMessage)', () =
     const { nonce } = await issueNonce(ctx.db);
     const completion = await buildSiweCompletion({
       nonce,
-      domain: 'evil.example.com',
+      domain: 'https://evil.example.com',
       uri: 'https://evil.example.com',
       chainId: WORLD_CHAIN_ID,
     });
@@ -91,7 +93,7 @@ describe('verifyWalletAuthCompletion (against the real verifySiweMessage)', () =
     const { nonce } = await issueNonce(ctx.db);
     const completion = await buildSiweCompletion({
       nonce,
-      domain: 'rush7.example.com',
+      domain: ORIGIN,
       uri: ORIGIN,
       chainId: 1, // Ethereum mainnet, not World Chain
     });
@@ -104,7 +106,7 @@ describe('verifyWalletAuthCompletion (against the real verifySiweMessage)', () =
     const { nonce } = await issueNonce(ctx.db);
     const completion = await buildSiweCompletion({
       nonce,
-      domain: 'rush7.example.com',
+      domain: ORIGIN,
       uri: ORIGIN,
       chainId: WORLD_CHAIN_ID,
     });

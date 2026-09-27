@@ -33,9 +33,7 @@ export interface VerifyWalletAuthOptions {
    * Our own origin, e.g. "https://rush7-staging.vercel.app". SIWE's `domain`/`uri` fields must point back
    * at this origin, or a signature obtained for a lookalike site could be replayed against us.
    * `verifySiweMessage` does NOT check this itself (docs/phase-0/01-world-docs-review.md §3, "Endurecimiento
-   * necesario") — this is our own addition. NOT YET CONFIRMED against a real World App SIWE message
-   * (nothing to test against before a Developer Portal app + device exist, decisions D1/D2); if it turns out
-   * to be too strict once we can see a real message, fix the comparison here — do not delete the check.
+   * necesario") — this is our own addition.
    */
   expectedOrigin: string;
   clock?: Clock;
@@ -63,8 +61,13 @@ function assertExpectedOrigin(
   } catch {
     throw new WalletAuthError(`expectedOrigin is not a valid URL: ${expectedOrigin}`);
   }
-  if (siwe.domain !== expected.host) {
-    throw new WalletAuthError(`SIWE domain "${siwe.domain}" does not match "${expected.host}"`);
+  // Confirmed 2026-09-26 against a REAL World App-generated SIWE message (the "not yet confirmed" gap this
+  // comment used to flag): World App writes the full origin into `domain` — e.g. "https://rush7.example.com"
+  // — not the bare host EIP-4361 technically specifies. A real login was rejected in production with
+  // `SIWE domain "https://world-rush.vercel.app" does not match "world-rush.vercel.app"` until this changed
+  // from `expected.host` to `expected.origin`.
+  if (siwe.domain !== expected.origin) {
+    throw new WalletAuthError(`SIWE domain "${siwe.domain}" does not match "${expected.origin}"`);
   }
   if (!siwe.uri.startsWith(expectedOrigin)) {
     throw new WalletAuthError(`SIWE uri "${siwe.uri}" does not start with "${expectedOrigin}"`);

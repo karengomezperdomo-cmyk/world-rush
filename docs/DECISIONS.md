@@ -47,7 +47,7 @@ decisions D1 and D2.
 | Pinned **`@worldcoin/minikit-js@2.0.3`**, **`@worldcoin/idkit@4.3.0`**, **`@worldcoin/idkit-core@4.3.0`** | Confirmed current via `registry.npmjs.org` on 2026-09-24 (not just the Phase 0 research from 5 days earlier). `idkit`'s peer range (`react/react-dom >=18`) is satisfied by React 19.3 already in the repo.               |
 | New package **`packages/auth`**: nonce issuance, SIWE verification + our own domain/uri/chainId hardening, sessions, World ID verify + nullifier recording, RP signing | Framework-agnostic and independently testable (mirrors `packages/db`/`packages/config`), keeps `apps/web` route handlers thin. |
 | **`WORLD_CHAIN_ID = 480`**                                                                          | Confirmed from MiniKit's own `sendTransaction` example in the official migration doc, not guessed.                                                                                                                       |
-| `verifySiweMessage`'s domain/uri/chainId hardening (Phase 0's flagged gap) is now implemented          | Compares against a new required `APP_ORIGIN` server env var. **Not yet verified against a real World-App-generated SIWE message** (docs/phase-0/01-world-docs-review.md §10 item 6) — nothing to test against before D1/D2. If it rejects real logins once we can test it, fix the comparison; do not delete the check. |
+| `verifySiweMessage`'s domain/uri/chainId hardening (Phase 0's flagged gap) is now implemented          | Compares against a new required `APP_ORIGIN` server env var. **Verified against a real World-App-generated SIWE message 2026-09-26** (docs/phase-0/01-world-docs-review.md §10 item 6, now closed) — see §1h: World App writes the full origin into `domain`, not the bare host, and the comparison was fixed to match. |
 | `packages/auth`'s SIWE test signs a **real** EIP-4361 message with a throwaway `viem` key and feeds it to the **real** `verifySiweMessage` (no mock) | The strongest check possible without a phone, and it earned its keep: reading the doc examples alone got `RpContext` wrong (missing `rp_id`, `sig` instead of `signature`) and `signRequest` wrong (it's synchronous, not async) — caught by `pnpm typecheck`. **Actually running the test against the real function** then caught two more, neither visible from types alone: (1) `chain_id` comes back as the numeric *string* `"480"` at runtime even though the package's own `.d.ts` declares `chain_id: number` — the hardening check now does `Number(siwe.chain_id) !== WORLD_CHAIN_ID`, not a strict `!==`; (2) `verifySiweMessage` does not always resolve `{isValid: false}` on a bad signature — on an EOA mismatch it falls back to an EIP-1271 (smart-wallet) check against a World Chain RPC, and that fallback can **throw** instead (confirmed: a plain `Error`, "Signature verification failed", uncaught, would have surfaced as a raw 500 instead of a clean 401). `verifyWalletAuthCompletion` now wraps that call and turns any exception into the same `WalletAuthError` as every other rejection reason. |
 | World ID `signal` (binding a proof to our own user id) is **not independently re-verified server-side** | Genuinely unresolved after research (docs/phase-0/01-world-docs-review.md §10 item 2): the verify request/response fields found in the docs don't expose a signal/signal_hash to check. The client still does the correct thing (`proofOfHuman({ signal: userId })`); nullifier-uniqueness (which IS enforced) is what actually stops one human from claiming two accounts. Ask World or confirm empirically once D1/D2 happen, before this handles anything that matters (rewards are not implemented). |
 | **DEV-ONLY** `/api/dev/fake-login`                                                                  | MiniKit only runs inside World App, so there is otherwise no way to exercise sessions/leaderboard-gating locally. Gated by `assertDevelopmentOnly` (throws outside development); a test tool, not a security control.    |
@@ -239,6 +239,29 @@ already does everything needed once authenticated; there was no real need to han
 
 Confirmed end to end on the real deployment: `/` → 200, `/play` → 200 serving the actual game HTML,
 `/api/health` → `{"status":"ok","app":"world-rush","env":"production"}`.
+
+## 1h. First real-device test (2026-09-26): World App writes the full origin into SIWE's `domain`
+
+D2's first real signal, on Android: opening `https://world-rush.vercel.app` from World App, `MiniKit.walletAuth()`
+completed and World App's own side confirmed the signature — but the app showed "Sign-in could not be
+verified." `vercel logs` on the live deployment gave the real reason, not the generic client-side message:
+
+```
+[auth/complete] rejected: SIWE domain "https://world-rush.vercel.app" does not match "world-rush.vercel.app"
+```
+
+This is exactly the question Phase 0 flagged as untestable without a real device (`01-world-docs-review.md`
+§10 item 6): **World App's SIWE message puts the full origin — scheme included — into the `domain` field**,
+not the bare host EIP-4361 technically specifies. `packages/auth/src/wallet-auth.ts`'s own hardening check
+(added in Phase 2, deliberately flagged as unconfirmed) compared against `expected.host` (bare host);
+changed to `expected.origin` (full origin) to match what a real client actually sends. Per that flag's own
+instruction ("if it rejects real logins once we can test it, fix the comparison; do not delete the check"),
+fixed rather than removed. All 6 `wallet-auth.test.ts` cases updated to build their SIWE messages with a full
+origin in `domain`, matching the confirmed real format, and still pass.
+
+**Also this session:** the owner pasted the real World ID RP signing key directly into chat while copying it
+from the Portal (a second instance of this, after the Neon DB password earlier — see §1g). Offered to rotate
+it; the owner declined ("no importa, sigamos asi") and that was respected — not a correction to force through.
 
 ## 2. Defaults in force (no objection recorded)
 
