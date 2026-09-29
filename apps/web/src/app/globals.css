@@ -180,39 +180,6 @@ body {
   white-space: nowrap;
 }
 
-/* A map with no painted hero scene: its accent colour, with the thumbnail at an exact 4x so the pixel art
-   stays crisp. See the note in Home.tsx — only map 1 has a scene, and the thumbnails are 46x28. */
-.screen .hero .art.no-scene {
-  position: relative;
-  aspect-ratio: 350 / 366;
-  background:
-    radial-gradient(90% 60% at 72% 34%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 70%),
-    linear-gradient(165deg, color-mix(in srgb, var(--accent) 22%, #0a0e25), #070b1c 75%);
-}
-
-/* Parked in the one free corner of the hero: the copy block is pinned top-left, the countdown top-right and
-   the PLAY NOW buttons overlay the bottom, so the thumbnail goes middle-right. 3x of 46x28, exactly. */
-.screen .hero .art.no-scene img {
-  position: absolute;
-  right: 16px;
-  top: 30%;
-  width: calc(46px * 3);
-  height: calc(28px * 3);
-  aspect-ratio: auto;
-  filter: drop-shadow(0 4px 0 #00000066);
-}
-
-/* With a thumbnail sitting at the right of the hero there is less room for the copy than the painted scene
-   allows, so the blurb wraps before it reaches the artwork instead of running underneath it. */
-.screen .hero .art.no-scene .hero-copy {
-  max-width: 56%;
-}
-
-/* .blurb carries its own width in ui.css, so it ignores the parent limit and slides under the artwork. */
-.screen .hero .art.no-scene .blurb {
-  width: auto;
-  max-width: 160px;
-}
 
 /* ---------------------------------------------------------------------------
  * The gameplay screen.
@@ -322,4 +289,29 @@ body {
   color: #ff9b8a;
   text-align: center;
   font: 400 13px var(--font-ui);
+}
+
+/* The boot screen: shown while we do not yet know whether the player has a session, and when the session
+   request fails. It deliberately does NOT look like the sign-in screen — see the note in AppShell.tsx. */
+.shell.boot {
+  gap: 18px;
+  align-content: center;
+}
+
+.shell.boot .logo {
+  height: 64px;
+  width: auto;
+  margin: 0 auto;
+}
+
+.shell.boot .boot-note {
+  margin: 0;
+  font: 400 10px var(--font-label);
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.shell.boot .btn {
+  max-width: 220px;
+  margin: 0 auto;
 }
