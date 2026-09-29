@@ -9,6 +9,7 @@ import { AVATAR_COUNT, avatar } from './avatars.mjs';
 import { bikeSprite, riderRagdoll } from './bike.mjs';
 import { gameplayFrame, heroScene } from './canyon.mjs';
 import { dustFrame, explosionFrame } from './fx.mjs';
+import { HERO_SCENES } from './heroes.mjs';
 import { logo } from './logo.mjs';
 import { MAPS } from './thumbs.mjs';
 
@@ -28,6 +29,8 @@ for (let f = 0; f < 6; f++) emit(`fx/explosion-${f}.png`, explosionFrame(f));
 for (let f = 0; f < 4; f++) emit(`fx/dust-${f}.png`, dustFrame(f));
 
 emit('scenes/hero-sunset-canyon.png', heroScene());
+// Maps 2-7, at the same size as map 1's. Before these existed, Home enlarged a 46x28 thumbnail instead.
+for (const [path, draw] of HERO_SCENES) emit(path, draw());
 emit('scenes/gameplay-canyon.png', gameplayFrame({ groundAt: 0.62 }));
 emit('scenes/gameplay-canyon-crash.png', gameplayFrame({ crash: true, groundAt: 0.62 }));
 emit('scenes/gameplay-canyon-window.png', gameplayFrame({ height: 146 }));
@@ -44,6 +47,7 @@ const maps = MAPS.map((map) => ({
   difficulty: map.difficulty,
   tagline: map.tagline,
   thumbnail: `thumbs/map-${map.n}-${map.slug}.png`,
+  hero: `scenes/hero-${map.slug}.png`,
 }));
 writeFileSync(
   out('manifest.json'),

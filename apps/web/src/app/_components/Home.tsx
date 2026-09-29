@@ -36,15 +36,16 @@ function thumbnailFor(mapId: string, mapNumber: number): string {
 }
 
 /**
- * Only Sunset Canyon has a painted hero scene in `design/art/scenes`; the other six maps have nothing but a
- * 46x28 pixel thumbnail. Neither shortcut is acceptable on its own: reusing the canyon scene puts canyon art
- * under the words "CORAL COAST", and stretching a 46px thumbnail to fill a 350px hero turns it to mush at a
- * 12x non-integer upscale.
+ * Every map now has its own painted hero scene at 175x183 (`tools/art/heroes.mjs`), so the art under the
+ * day's name is always that day's map. Until those existed only Sunset Canyon had one, and the alternatives
+ * were both bad: reusing the canyon scene put canyon art under the words "CORAL COAST", and stretching a
+ * 46x28 thumbnail across a 350px hero turned it to mush at a 12x non-integer upscale.
  *
- * So a map without a scene gets a panel in its own accent colour with its thumbnail at a clean 4x — every
- * pixel still square — which looks deliberate instead of broken, and is honest about the art that exists.
+ * The art slug and the level id are the same string by design, so no lookup table is needed.
  */
-const HERO_SCENES: Record<number, string> = { 1: '/art/scenes/hero-sunset-canyon.png' };
+function heroSceneFor(mapId: string): string {
+  return `/art/scenes/hero-${mapId}.png`;
+}
 
 function DayTile({ scheduled }: { scheduled: ScheduledMap }) {
   const { map, status } = scheduled;
@@ -92,7 +93,6 @@ export function Home({ session }: { session: HomeSession }) {
   if (!now) return <div className="screen" />;
 
   const today = todaysMap(now);
-  const heroScene = HERO_SCENES[today.number];
   const week = weekSchedule(now);
   const displayName = session.username ?? session.walletAddress?.slice(0, 6) ?? 'RIDER';
 
@@ -118,12 +118,9 @@ export function Home({ session }: { session: HomeSession }) {
       </header>
 
       <section className="hero notch glow">
-        <div
-          className={heroScene ? 'art' : 'art no-scene'}
-          style={heroScene ? undefined : { ['--accent' as string]: today.accent }}
-        >
+        <div className="art">
           {/* eslint-disable-next-line @next/next/no-img-element -- pixel art, must not be resampled */}
-          <img className="pix" src={heroScene ?? thumbnailFor(today.level.id, today.number)} alt="" />
+          <img className="pix" src={heroSceneFor(today.level.id)} alt="" />
           <div className="hero-copy">
             <div className="kicker">TODAY&apos;S RACE</div>
             <div className="day">

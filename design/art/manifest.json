@@ -73,6 +73,30 @@
       "width": 175,
       "height": 183
     },
+    "scenes/hero-coral-coast.png": {
+      "width": 175,
+      "height": 183
+    },
+    "scenes/hero-emerald-woods.png": {
+      "width": 175,
+      "height": 183
+    },
+    "scenes/hero-steel-yard.png": {
+      "width": 175,
+      "height": 183
+    },
+    "scenes/hero-magma-ridge.png": {
+      "width": 175,
+      "height": 183
+    },
+    "scenes/hero-frost-peak.png": {
+      "width": 175,
+      "height": 183
+    },
+    "scenes/hero-orbit-circuit.png": {
+      "width": 175,
+      "height": 183
+    },
     "scenes/gameplay-canyon.png": {
       "width": 195,
       "height": 422
@@ -159,7 +183,8 @@
       "accent": "#ff8a3a",
       "difficulty": 1,
       "tagline": "Speed through the rocks. Master the jumps. Beat the clock.",
-      "thumbnail": "thumbs/map-1-sunset-canyon.png"
+      "thumbnail": "thumbs/map-1-sunset-canyon.png",
+      "hero": "scenes/hero-sunset-canyon.png"
     },
     {
       "n": 2,
@@ -169,7 +194,8 @@
       "accent": "#3ad0e0",
       "difficulty": 2,
       "tagline": "Ride the shoreline. Do not touch the water.",
-      "thumbnail": "thumbs/map-2-coral-coast.png"
+      "thumbnail": "thumbs/map-2-coral-coast.png",
+      "hero": "scenes/hero-coral-coast.png"
     },
     {
       "n": 3,
@@ -179,7 +205,8 @@
       "accent": "#3aa07a",
       "difficulty": 2,
       "tagline": "Roots, logs and long jumps between the pines.",
-      "thumbnail": "thumbs/map-3-emerald-woods.png"
+      "thumbnail": "thumbs/map-3-emerald-woods.png",
+      "hero": "scenes/hero-emerald-woods.png"
     },
     {
       "n": 4,
@@ -189,7 +216,8 @@
       "accent": "#7a8aff",
       "difficulty": 3,
       "tagline": "Cranes, containers and tight landings.",
-      "thumbnail": "thumbs/map-4-steel-yard.png"
+      "thumbnail": "thumbs/map-4-steel-yard.png",
+      "hero": "scenes/hero-steel-yard.png"
     },
     {
       "n": 5,
@@ -199,7 +227,8 @@
       "accent": "#ff5a2a",
       "difficulty": 4,
       "tagline": "Hot rock. Cold nerves.",
-      "thumbnail": "thumbs/map-5-magma-ridge.png"
+      "thumbnail": "thumbs/map-5-magma-ridge.png",
+      "hero": "scenes/hero-magma-ridge.png"
     },
     {
       "n": 6,
@@ -209,7 +238,8 @@
       "accent": "#8ac8ff",
       "difficulty": 4,
       "tagline": "Slippery slopes and huge air.",
-      "thumbnail": "thumbs/map-6-frost-peak.png"
+      "thumbnail": "thumbs/map-6-frost-peak.png",
+      "hero": "scenes/hero-frost-peak.png"
     },
     {
       "n": 7,
@@ -219,7 +249,8 @@
       "accent": "#a06ad8",
       "difficulty": 5,
       "tagline": "The final race of the week.",
-      "thumbnail": "thumbs/map-7-orbit-circuit.png"
+      "thumbnail": "thumbs/map-7-orbit-circuit.png",
+      "hero": "scenes/hero-orbit-circuit.png"
     }
   ]
 }
