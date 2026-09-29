@@ -24,8 +24,64 @@ export interface Level {
   /** Checkpoint x-positions, strictly increasing, strictly between start.x and finishX. */
   readonly checkpoints: readonly number[];
   readonly finishX: number;
-  /** Falling below this y (world down = negative y, Box2D convention) counts as a crash. */
+  /**
+   * Falling below this y (world down = negative y, Box2D convention) counts as a crash. Raising it toward
+   * the track is a difficulty lever in itself: on Coral Coast the water sits just under the shoreline, so a
+   * gap punishes immediately instead of giving the rider a long fall to think about it.
+   */
   readonly killY: number;
+  /**
+   * Ground friction, default 1.0. Lower is slippery: the rear wheel spins instead of driving, so the bike
+   * accelerates and brakes worse. This is what makes Frost Peak's "slippery slopes" a real mechanic rather
+   * than a colour change.
+   */
+  readonly groundFriction?: number;
+}
+
+/** A run of ground, as relative `[dx, dy]` steps from wherever the previous piece left off. */
+export interface GroundPiece {
+  readonly steps: readonly (readonly [dx: number, dy: number])[];
+}
+
+/** A hole of `width` metres; the ground resumes `drop` metres lower (negative resumes higher). */
+export interface GapPiece {
+  readonly gap: number;
+  readonly drop?: number;
+}
+
+export type TrackPiece = GroundPiece | GapPiece;
+
+/**
+ * Builds a whole track's strips from a start point and an alternating list of ground and gaps.
+ *
+ * Gaps are declared by WIDTH and the builder works out where the next strip begins. Authoring those
+ * positions by hand is how the first draft of Sunset Canyon ended up with a 15 m gap where 6.5 m was
+ * intended, and later with two strips overlapping into a negative-width gap — twice, because a strip's end
+ * is the sum of a dozen steps and nobody re-adds that in their head after a tweak.
+ */
+export function buildTrack(
+  startX: number,
+  startY: number,
+  pieces: readonly TrackPiece[],
+): GroundStrip[] {
+  const strips: GroundStrip[] = [];
+  let x = startX;
+  let y = startY;
+  for (const piece of pieces) {
+    if ('gap' in piece) {
+      x += piece.gap;
+      y -= piece.drop ?? 0;
+      continue;
+    }
+    const built = strip(x, y, piece.steps);
+    strips.push(built);
+    const last = built[built.length - 1];
+    if (last) {
+      x = last[0];
+      y = last[1];
+    }
+  }
+  return strips;
 }
 
 /**
@@ -82,79 +138,87 @@ export const TEST_LEVEL: Level = {
 };
 
 /**
- * **Map 1 — Sunset Canyon** (design/art/manifest.json: MON, difficulty 1 of 5, "Speed through the rocks.
- * Master the jumps. Beat the clock.").
+ * The ground's y at a given x, or `undefined` when x falls in a gap (or outside the track entirely).
  *
- * The easiest map of the week, so the shape is forgiving: a long runway to learn the throttle, rollers that
- * teach the suspension, then two real gaps with generous landing ramps. Checkpoints sit just before each
- * hazard, so a bad jump costs seconds, not the run.
+ * Respawning needs this. Deriving the respawn height from wherever the bike last touched down instead is
+ * what locked maps 4-7 into an endless crash loop (found 2026-09-29): the checkpoint's x was correct but the
+ * y came from a different part of the track, so on any map with real elevation change the bike rematerialised
+ * *inside* the terrain, Box2D ejected it, that counted as a crash, and it respawned into the same rock again.
  *
- * Length is tuned to decision B4 (45-90 s per map): ~390 m, which a rider holding throttle covers in
- * roughly 50 s, and a cautious one in rather more.
+ * Linear interpolation only — no trig, so the determinism lint in this package stays satisfied.
  */
-export const SUNSET_CANYON: Level = {
-  id: 'sunset-canyon',
-  ground: [
-    // --- Opening: long runway, then rollers that never threaten, up to a deliberately SHALLOW takeoff.
-    // Ramp angle matters more than ramp height here: measured on the real bike, a 2.2 m rise over 8 m
-    // spins it into an uncontrolled backflip at full speed, which is no way to greet a rider on the
-    // easiest map of the week. Spreading the same climb over 16 m launches it flat instead.
-    strip(-6, 0, [
-      [30, 0], // runway: room to reach full speed before anything happens
-      [12, 1.2], // first rise
-      [10, 0],
-      [12, -1.2], // and back down
-      [18, 0],
-      [12, 1.6], // rollers, long enough to stay gentle
-      [10, -0.9],
-      [12, 1.4],
-      [10, -1.6],
-      [16, 0],
-      [16, 2.0], // shallow takeoff ramp for the first gap (lip at x=142, y=2.5)
-    ]),
-    // --- First gap: 9 m, landing 1.4 m lower. Measured, not guessed: at full throttle the bike crosses
-    // the lip near 15 m/s and covers well over 10 m before it comes down, so this is a jump a rider
-    // clears by simply holding the throttle — which is what difficulty 1 should feel like.
-    strip(161, 1.1, [
-      [14, -0.6], // landing slope
-      [20, 0],
-      [14, 1.6],
-      [12, -0.8],
-      [16, 0],
-      [14, -1.8], // drop to the canyon floor
-      [26, 0],
-      [16, 1.1],
-      [12, 0],
-      [14, -1.1],
-      [24, 0],
-      [18, 2.4], // second takeoff: higher, still shallow enough to leave the bike level (lip x=351, y=2.9)
-    ]),
-    // --- Second gap: 12 m, the "master the jumps" moment. Wider and faster, landing 1.5 m lower, so it
-    // still rewards commitment rather than punishing it.
-    strip(373, 0.6, [
-      [16, -0.8], // landing slope
-      [22, -1.0],
-      [20, 0],
-      [16, 1.2],
-      [16, -1.2],
-      [24, 0],
-      [18, 1.4], // long canyon-floor rollers, all stretched out enough to keep the bike planted
-      [18, -1.4],
-      [26, 0],
-      [20, 1.6],
-      [20, -1.6],
-      [24, 0],
-      [18, 1.2],
-      [18, -1.2],
-      // Deliberately flat and long into the finish: an earlier version had a crest 24 m out that threw the
-      // bike into a bad landing right on the line, which the deterministic ride-through caught.
-      [105, 0],
-    ]),
-  ],
-  start: { x: 0, y: 0.6 },
-  // Each one sits on solid ground a good run-up BEFORE its hazard, never on a takeoff lip: respawning at
-  // the edge of a jump would drop the rider straight back into the hole they just fell in.
-  checkpoints: [110, 230, 330, 450, 560],
-  finishX: 720,
-  killY: -14,
-};
+export function groundYAt(level: Level, x: number): number | undefined {
+  for (const groundStrip of level.ground) {
+    for (let i = 0; i < groundStrip.length - 1; i++) {
+      const a = groundStrip[i];
+      const b = groundStrip[i + 1];
+      if (!a || !b) continue;
+      if (x >= a[0] && x <= b[0]) {
+        const span = b[0] - a[0];
+        if (span <= 0) continue;
+        return a[1] + ((b[1] - a[1]) * (x - a[0])) / span;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Picks checkpoint positions that are actually survivable, from the track's own geometry.
+ *
+ * Checkpoints were hand-authored until 2026-09-29, and they were wrong on six of the seven maps: typed at
+ * round numbers like 100 or 320, they landed on takeoff lips, inside gaps, or a few metres in front of a jump.
+ * A checkpoint is where the rider restarts FROM REST, so each one needs enough unbroken ground ahead to
+ * rebuild speed before the next hole — otherwise a single crash ends the run permanently, which is the worst
+ * bug this game can have and the hardest to notice, because a clean lap never touches it.
+ *
+ * The rule: stand at the entrance to a strip (or a point along it), and only accept it if the ground runs at
+ * least `minRunway` metres before that strip ends at a gap. The final strip carries the finish line, so any
+ * point on it is safe.
+ */
+export function autoCheckpoints(
+  ground: readonly GroundStrip[],
+  finishX: number,
+  options: { readonly minRunway?: number; readonly spacing?: number } = {},
+): number[] {
+  const minRunway = options.minRunway ?? 50;
+  const spacing = options.spacing ?? 90;
+  const candidates: number[] = [];
+
+  for (let stripIndex = 1; stripIndex < ground.length; stripIndex++) {
+    const stripPoints = ground[stripIndex];
+    if (!stripPoints || stripPoints.length < 2) continue;
+    const first = stripPoints[0];
+    const last = stripPoints[stripPoints.length - 1];
+    if (!first || !last) continue;
+    const isFinalStrip = stripIndex === ground.length - 1;
+    // Two metres in, so the checkpoint is never exactly on the strip's edge.
+    for (let x = first[0] + 2; x < last[0]; x += spacing) {
+      if (isFinalStrip || last[0] - x >= minRunway) candidates.push(x);
+    }
+  }
+
+  const chosen: number[] = [];
+  for (const candidate of candidates) {
+    if (candidate > finishX - 40) continue;
+    const previous = chosen[chosen.length - 1];
+    if (previous !== undefined && candidate - previous < spacing) continue;
+    chosen.push(candidate);
+  }
+  return chosen;
+}
+
+/**
+ * Builds a level, deriving the checkpoints from the geometry unless they are given explicitly.
+ *
+ * On a low-friction map the bike needs noticeably more road to get back up to speed, so respawn points there
+ * demand a longer run-up than they do on rock.
+ */
+export function defineLevel(spec: Omit<Level, 'checkpoints'> & { checkpoints?: readonly number[] }): Level {
+  const slippery = (spec.groundFriction ?? 1.0) < 1.0;
+  return {
+    ...spec,
+    checkpoints:
+      spec.checkpoints ?? autoCheckpoints(spec.ground, spec.finishX, { minRunway: slippery ? 60 : 50 }),
+  };
+}

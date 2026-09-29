@@ -1,5 +1,5 @@
 import { hasInput, INPUT, type InputMask } from './inputs';
-import type { Level } from './level';
+import { groundYAt, type Level } from './level';
 import type { PhysicsEngine } from './physics-engine';
 
 /** One fixed simulation step, matching the server's re-simulation and the Box2D v3 samples' own default. */
@@ -8,6 +8,8 @@ const SUB_STEP_COUNT = 4;
 
 /** Ticks a crash freezes input for before an automatic respawn at the last checkpoint. */
 const CRASH_RESPAWN_TICKS = 60;
+/** Metres above the ground a respawn drops the bike from, so it settles instead of clipping into it. */
+const RESPAWN_CLEARANCE = 1.0;
 /** Chassis "up" dot with world-up below this = too far tilted: a crash (docs/design/GDD.md §5). */
 const CRASH_UP_THRESHOLD = 0.15;
 /** Below this world y (independent of the level's own killY) is always a fall, as a safety net. */
@@ -110,7 +112,7 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
       segment.point1 = new b2Vec2(a[0], a[1]);
       segment.point2 = new b2Vec2(b[0], b[1]);
       const shapeDef = b2DefaultShapeDef();
-      shapeDef.material.friction = 1.0;
+      shapeDef.material.friction = level.groundFriction ?? 1.0;
       b2CreateSegmentShape(groundId, shapeDef, segment);
     }
   }
@@ -192,7 +194,6 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
   let crashedAtTick = -1;
   let finished = false;
   let finishTick: number | null = null;
-  let lastGoodTransform = { x: level.start.x, y: level.start.y };
 
   function killY(): number {
     return Math.max(level.killY, ABSOLUTE_KILL_Y);
@@ -201,8 +202,9 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
   function respawnAtCheckpoint(): void {
     const x =
       checkpointIndex >= 0 ? (level.checkpoints[checkpointIndex] ?? level.start.x) : level.start.x;
-    // Respawn a little above the recorded ground contact so the bike drops onto the track, not into it.
-    const y = lastGoodTransform.y + 0.6;
+    // Drop onto the ground that is actually AT the respawn x. See groundYAt() for why using the bike's
+    // last contact height instead made every map with elevation change unfinishable.
+    const y = (groundYAt(level, x) ?? level.start.y) + RESPAWN_CLEARANCE;
     const zero = new b2Vec2(0, 0);
     // Each body goes back to its OWN offset, the same ones `createWheel` used. Teleporting all three to a
     // single point stacks the wheels inside the chassis, and Box2D resolves that overlap by blasting them
@@ -258,7 +260,6 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
         crashed = true;
         crashedAtTick = tick;
       } else {
-        lastGoodTransform = { x: pos.x, y: pos.y };
         const nextCheckpoint = level.checkpoints[checkpointIndex + 1];
         if (nextCheckpoint !== undefined && pos.x >= nextCheckpoint) checkpointIndex += 1;
         if (pos.x >= level.finishX) {
