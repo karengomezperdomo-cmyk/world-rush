@@ -7,7 +7,7 @@ export const TICK_SECONDS = 1 / 60;
 const SUB_STEP_COUNT = 4;
 
 /** Ticks a crash freezes input for before an automatic respawn at the last checkpoint. */
-const CRASH_RESPAWN_TICKS = 60;
+export const CRASH_RESPAWN_TICKS = 60;
 /** Metres above the ground a respawn drops the bike from, so it settles instead of clipping into it. */
 const RESPAWN_CLEARANCE = 1.0;
 /** Chassis "up" dot with world-up below this = too far tilted: a crash (docs/design/GDD.md §5). */

@@ -58,6 +58,15 @@ export interface GameHandle {
   getState(): BikeState;
   /** Wires an on-screen control button to an INPUT flag. */
   bindButton(element: HTMLElement, flag: number): void;
+  /**
+   * Stops advancing the simulation. The run's clock is the simulation's own tick count, so a paused game
+   * genuinely stops timing — which is why the pause screen has to say out loud that the DAILY deadline keeps
+   * running regardless.
+   */
+  pause(): void;
+  resume(): void;
+  /** Throws the current run away and starts the same level again from tick zero. */
+  restart(): void;
   destroy(): void;
 }
 
@@ -71,7 +80,8 @@ export interface StartGameOptions {
 
 export async function startGame({ parent, level, onState }: StartGameOptions): Promise<GameHandle> {
   const engine = await loadPhysicsEngine();
-  const simulation = createBikeSimulation(engine, level);
+  // Reassigned by restart(), which throws the old world away rather than trying to rewind it.
+  let simulation = createBikeSimulation(engine, level);
 
   const app = new Application();
   await app.init({
@@ -96,7 +106,14 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
   const input: InputTracker = createInputTracker();
 
   let accumulatorMs = 0;
+  let paused = false;
   const onTick = (): void => {
+    if (paused) {
+      // Drop the elapsed time on the floor instead of banking it: otherwise resuming would fast-forward
+      // through every tick the player spent reading the pause screen.
+      render(simulation.getState(), 0);
+      return;
+    }
     accumulatorMs += app.ticker.elapsedMS;
     const tickMs = TICK_SECONDS * 1000;
     let ticks = Math.floor(accumulatorMs / tickMs);
@@ -130,6 +147,22 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
   return {
     getState: () => simulation.getState(),
     bindButton: (element, flag) => input.bindButton(element, flag),
+    pause() {
+      paused = true;
+    },
+    resume() {
+      paused = false;
+      accumulatorMs = 0;
+    },
+    restart() {
+      simulation.dispose();
+      simulation = createBikeSimulation(engine, level);
+      accumulatorMs = 0;
+      paused = false;
+      const state = simulation.getState();
+      onState?.(state);
+      render(state, 0);
+    },
     destroy() {
       app.ticker.remove(onTick);
       input.dispose();

@@ -346,6 +346,50 @@ crash and weak braking. Frost Peak's comments now say that rather than what the 
 matters after a crash — a restart-from-every-checkpoint run. All seven finish in 44-50 s of simulated time,
 inside decision B4's 45-90 s target. The maps are data only: no scene art exists for maps 2-7 (see §4b).
 
+## 1k. Phase 6 (2026-09-29): the game-loop screens, and a 2 FPS scare that was not the game
+
+`/play` is now the real gameplay screen from `design/screens/gameplay-a.html`, with the pause, crash and
+finish states from the matching mocks. `GameHandle` gained `pause()`, `resume()` and `restart()`; pausing
+genuinely stops the run clock, because the clock IS the simulation's tick count — which is why the pause
+screen says out loud that the DAILY deadline keeps running regardless.
+
+### What is deliberately not shown
+
+The finish mock displays a world rank, a leaderboard position and a green "VERIFIED BY THE SERVER" badge.
+None of that exists yet — Phase 7 adds replay submission and re-simulation — so the screen shows none of it
+and says plainly that the time was not submitted. A green verification tick would be a claim the player has
+no way to check and that is not true. The personal best IS shown, labelled "BEST ON THIS DEVICE", because
+that is exactly what it is: a number in `localStorage`, scoped per map and per UTC day, and it is read and
+written through guards because `localStorage` throws outright in some private-mode browsers.
+
+### The 2 FPS investigation, and why it ended in "not our bug"
+
+The gameplay screen measured **2 FPS** in the desktop app's browser pane while the Home screen measured 61 in
+the same pane. That is not something to wave away, and the last time a frame-rate scare appeared here it was
+dismissed because `document.hidden` was true (§1i) — this time `document.hidden` was false, so that
+explanation was not available. Measured, in order:
+
+| suspect                       | measurement                                                          | verdict |
+| ----------------------------- | -------------------------------------------------------------------- | ------- |
+| React re-rendering each frame | same 2 FPS with the game paused, which stops every React update       | not it  |
+| Software rendering            | `WEBGL_debug_renderer_info` reports a real GPU through ANGLE/D3D11    | not it  |
+| Pixi rendering                | `renderer.render()` timed at **0.38 ms**                              | not it  |
+| The physics step              | 300 `simulation.step()` calls: **0.1 ms** median, 0.6 ms worst        | not it  |
+| React again, fully isolated   | own rAF loop doing step + render with React removed: identical stalls | not it  |
+
+The frame deltas were the clue: a healthy 16.7 ms median punctuated by stalls of almost exactly **1016 ms**.
+The control experiment settled it — a bare `<canvas>` doing nothing but `gl.clear()`, with no Pixi, no
+physics and no game code at all, stalls identically. **WebGL compositing in this embedded pane on this
+machine's GPU is what stalls**, and the game's own per-frame cost is about half a millisecond.
+
+Two things follow, and the second matters more than the first:
+
+1. Nothing needs optimising. Updating React state every frame was the obvious suspect and was innocent;
+   "fixing" it on suspicion would have been work against a problem that does not exist.
+2. **This does not prove the game runs well on a phone.** It proves only that these measurements cannot say
+   either way, because the measuring environment is the thing that stalls. Real-device frame rate stays
+   unverified and belongs to decision **D2**, alongside the deluxe/compat determinism question from §1d.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·

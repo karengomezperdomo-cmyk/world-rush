@@ -41,11 +41,16 @@ await writeFile(
   header + tokens.replaceAll("url('fonts/", "url('/fonts/"),
 );
 
-const ui = await readFile(join(designDir, 'ui.css'), 'utf8');
-await writeFile(join(styleDestination, 'ui.css'), header + ui);
+// ui.css carries the shared components; game.css the HUD, control pads and track bar; screens.css the
+// modals, toasts and result panels. board.css is deliberately skipped: it styles the mock INDEX page that
+// lists the screens, which has no counterpart in the app.
+for (const sheet of ['ui.css', 'game.css', 'screens.css']) {
+  const css = await readFile(join(designDir, sheet), 'utf8');
+  await writeFile(join(styleDestination, sheet), header + css);
+}
 
 for (const font of FONTS) {
   await copyFile(join(designDir, 'fonts', font), join(fontDestination, font));
 }
 
-console.log(`copy-design: copied 2 stylesheets and ${FONTS.length} fonts into apps/web/`);
+console.log(`copy-design: copied 4 stylesheets and ${FONTS.length} fonts into apps/web/`);

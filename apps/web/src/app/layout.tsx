@@ -7,6 +7,8 @@ import { Providers } from './providers';
 // Order matters: the copied design system first, then the app's own overrides on top of it.
 import '../design/tokens.css';
 import '../design/ui.css';
+import '../design/game.css';
+import '../design/screens.css';
 import './globals.css';
 
 export const metadata: Metadata = {
