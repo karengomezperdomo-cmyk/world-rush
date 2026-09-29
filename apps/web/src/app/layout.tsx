@@ -2,7 +2,11 @@ import { BRAND } from '@worldrush/shared';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { getWorldMiniAppConfig } from '../lib/world-config';
+import { IconSprite } from './_components/IconSprite';
 import { Providers } from './providers';
+// Order matters: the copied design system first, then the app's own overrides on top of it.
+import '../design/tokens.css';
+import '../design/ui.css';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -27,6 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <IconSprite />
         <Providers miniAppId={miniAppConfig?.miniAppId}>{children}</Providers>
       </body>
     </html>

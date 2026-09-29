@@ -19,7 +19,14 @@ interface SessionState {
   humanVerified?: boolean;
 }
 
-export function SignIn({ worldIdAppId }: { worldIdAppId?: `app_${string}` }) {
+export function SignIn({
+  worldIdAppId,
+  onSession,
+}: {
+  worldIdAppId?: `app_${string}`;
+  /** Reports every session read upwards, so the shell can swap to Home the moment sign-in lands. */
+  onSession?: (session: SessionState) => void;
+}) {
   const [session, setSession] = useState<SessionState | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +35,10 @@ export function SignIn({ worldIdAppId }: { worldIdAppId?: `app_${string}` }) {
 
   const refreshSession = useCallback(async () => {
     const response = await fetch('/api/auth/session', { cache: 'no-store' });
-    setSession((await response.json()) as SessionState);
-  }, []);
+    const next = (await response.json()) as SessionState;
+    setSession(next);
+    onSession?.(next);
+  }, [onSession]);
 
   useEffect(() => {
     void refreshSession();

@@ -1,8 +1,20 @@
 /* World App WebView guidance (docs.world.org, App Guidelines): no scroll bounce on iOS, dynamic viewport height. */
 :root {
   color-scheme: dark;
-  --bg: #0b1020;
-  --fg: #e8ecf8;
+}
+
+/*
+ * Fallbacks only. The real palette comes from the copied design tokens, which are imported BEFORE this file
+ * and define --bg (and --text, which --fg mirrors for the Phase 5 gameplay styles written against it).
+ */
+@supports not (color: var(--never)) {
+  :root {
+    --bg: #0a0e25;
+  }
+}
+
+:root {
+  --fg: var(--text, #e8ecf8);
 }
 
 html,
@@ -151,4 +163,169 @@ body {
   border-color: #f8af40;
   background: #2a1a08d9;
   color: #f0c07a;
+}
+
+/* ---------------------------------------------------------------------------
+ * Bridging `design/` to a real device.
+ *
+ * `ui.css` and `tokens.css` are copied verbatim from the design board (see
+ * scripts/copy-design.mjs), and they are written against the mockups' fixed
+ * 390x844 phone frame: `.phone` has a hard width and height, `.tabbar` is
+ * absolutely positioned inside it, and `--safe-top`/`--safe-bottom` are constants
+ * standing in for a notch.
+ *
+ * Nothing in those files is edited. The app supplies `.screen` in place of
+ * `.phone` and overrides the two assumptions that do not survive contact with a
+ * real phone: the safe-area insets become the actual ones, and the tab bar is
+ * fixed to the viewport rather than to a box of known height.
+ * ------------------------------------------------------------------------- */
+:root {
+  /* The mock's stand-in notch values become the device's real insets. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.screen {
+  position: relative;
+  width: 100%;
+  max-width: 390px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  overflow-x: hidden;
+  background: var(--bg);
+  /* Room for the fixed tab bar, so the last day tile is never trapped underneath it. */
+  padding-bottom: calc(76px + var(--safe-bottom));
+}
+
+/* The same backdrop `.phone::before` paints in the mocks. */
+.screen::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(120% 55% at 50% 0%, #1a2454 0%, transparent 62%),
+    linear-gradient(180deg, #0a0e25 0%, #080b1d 100%);
+}
+
+.screen > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Pinned to the viewport, and kept to the same column as the content on wide screens. */
+.screen .tabbar {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  width: 100%;
+  max-width: 390px;
+  transform: translateX(-50%);
+}
+
+/* The hero art is authored at a fixed 350px; let it shrink on narrower phones. */
+.screen .hero .art,
+.screen .hero .art img {
+  width: 100%;
+  height: auto;
+}
+
+.screen .hero .art img {
+  aspect-ratio: 350 / 366;
+  object-fit: cover;
+}
+
+/* Tabs are links here, not decorative divs. */
+.screen .tab {
+  background: none;
+  border: 0;
+  text-decoration: none;
+  cursor: pointer;
+  font: 400 8.5px var(--font-label);
+  letter-spacing: 0.06em;
+  color: var(--faint);
+}
+
+.screen .tile-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+}
+
+.screen .tile-link[disabled] {
+  cursor: default;
+}
+
+/* A route that does not exist yet should look unavailable rather than broken. */
+.screen .tab[aria-disabled='true'],
+.screen .btn[disabled] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* The design board is drawn at exactly 390px wide, and two pieces are tuned to that number to the pixel.
+   Real phones are narrower (a 375px iPhone is the common floor), so both need a little room to breathe. */
+
+/* Seven 77px tiles wrap 4 + 3 only if the row has ~348px; at 375px the mock's 20px gutters leave 335. */
+@media (max-width: 389px) {
+  .screen .days {
+    padding: 0 8px;
+  }
+}
+
+/* The logo is a fixed-height bitmap next to a chip that grows with the player's name; without this the two
+   fight over the row and the logo gets squeezed out of shape. */
+.screen .appbar .logo {
+  flex: none;
+  max-width: 46%;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.screen .appbar .user-chip {
+  min-width: 0;
+}
+
+.screen .appbar .user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A map with no painted hero scene: its accent colour, with the thumbnail at an exact 4x so the pixel art
+   stays crisp. See the note in Home.tsx — only map 1 has a scene, and the thumbnails are 46x28. */
+.screen .hero .art.no-scene {
+  position: relative;
+  aspect-ratio: 350 / 366;
+  background:
+    radial-gradient(90% 60% at 72% 34%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 70%),
+    linear-gradient(165deg, color-mix(in srgb, var(--accent) 22%, #0a0e25), #070b1c 75%);
+}
+
+/* Parked in the one free corner of the hero: the copy block is pinned top-left, the countdown top-right and
+   the PLAY NOW buttons overlay the bottom, so the thumbnail goes middle-right. 3x of 46x28, exactly. */
+.screen .hero .art.no-scene img {
+  position: absolute;
+  right: 16px;
+  top: 30%;
+  width: calc(46px * 3);
+  height: calc(28px * 3);
+  aspect-ratio: auto;
+  filter: drop-shadow(0 4px 0 #00000066);
+}
+
+/* With a thumbnail sitting at the right of the hero there is less room for the copy than the painted scene
+   allows, so the blurb wraps before it reaches the artwork instead of running underneath it. */
+.screen .hero .art.no-scene .hero-copy {
+  max-width: 56%;
+}
+
+/* .blurb carries its own width in ui.css, so it ignores the parent limit and slides under the artwork. */
+.screen .hero .art.no-scene .blurb {
+  width: auto;
+  max-width: 160px;
 }

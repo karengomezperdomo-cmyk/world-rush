@@ -38,12 +38,15 @@ export function GameCanvas() {
     // loading them during the server render would fail.
     void (async () => {
       try {
-        const [{ startGame }, { SUNSET_CANYON }] = await Promise.all([
+        const [{ startGame }, { todaysMap }] = await Promise.all([
           import('@worldrush/game-client'),
-          import('@worldrush/game-core'),
+          import('../../../lib/schedule'),
         ]);
         if (cancelled) return;
-        handle = await startGame({ parent, level: SUNSET_CANYON, onState: setState });
+        // Whatever the Home screen says is open today is what actually loads here. Hard-coding map 1 meant
+        // Home could announce Coral Coast while the rider was dropped into Sunset Canyon.
+        const level = todaysMap(new Date()).level;
+        handle = await startGame({ parent, level, onState: setState });
         if (cancelled) {
           handle.destroy();
           handle = null;

@@ -18,6 +18,10 @@ apps/web/public/box2d/
 # Game art copied out of design/art by scripts/copy-art.mjs (regenerated on predev/prebuild)
 apps/web/public/art/
 
+# Design system copied out of design/ by scripts/copy-design.mjs (regenerated on predev/prebuild)
+apps/web/src/design/
+apps/web/public/fonts/
+
 # secrets: NEVER commit. Only .env.example is tracked.
 .env
 .env.*

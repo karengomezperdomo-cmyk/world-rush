@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "predev": "node ../../scripts/copy-box2d.mjs && node ../../scripts/copy-art.mjs",
+    "predev": "node ../../scripts/copy-box2d.mjs && node ../../scripts/copy-art.mjs && node ../../scripts/copy-design.mjs",
     "dev": "next dev",
-    "prebuild": "node ../../scripts/copy-box2d.mjs && node ../../scripts/copy-art.mjs",
+    "prebuild": "node ../../scripts/copy-box2d.mjs && node ../../scripts/copy-art.mjs && node ../../scripts/copy-design.mjs",
     "build": "next build --webpack",
     "start": "next start",
     "typecheck": "tsc --noEmit -p tsconfig.json"
