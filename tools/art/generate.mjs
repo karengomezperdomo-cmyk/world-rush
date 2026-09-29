@@ -25,6 +25,20 @@ emit('bike/ride.png', bikeSprite({ lean: 0 }));
 emit('bike/lean-back.png', bikeSprite({ lean: -1, spin: 60 }));
 emit('bike/lean-forward.png', bikeSprite({ lean: 1, spin: 100 }));
 for (let f = 0; f < 4; f++) emit(`bike/ragdoll-${f}.png`, riderRagdoll(f));
+
+// Wheel-spin frames, so the bike reads as MOVING rather than sliding along on frozen wheels. The tread
+// blocks repeat every 30 degrees alternating and the spokes every 60, so the wheel's visual period is 60:
+// four frames across that one period cycle seamlessly. The unindexed sprites above stay for the mocks.
+const SPIN_FRAMES = [0, 15, 30, 45];
+for (const [pose, options] of [
+  ['ride', { lean: 0 }],
+  ['lean-back', { lean: -1 }],
+  ['lean-forward', { lean: 1 }],
+]) {
+  SPIN_FRAMES.forEach((spin, frame) =>
+    emit(`bike/${pose}-${frame}.png`, bikeSprite({ ...options, spin })),
+  );
+}
 for (let f = 0; f < 6; f++) emit(`fx/explosion-${f}.png`, explosionFrame(f));
 for (let f = 0; f < 4; f++) emit(`fx/dust-${f}.png`, dustFrame(f));
 

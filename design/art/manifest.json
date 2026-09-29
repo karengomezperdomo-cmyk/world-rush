@@ -29,6 +29,54 @@
       "width": 20,
       "height": 20
     },
+    "bike/ride-0.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/ride-1.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/ride-2.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/ride-3.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/lean-back-0.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/lean-back-1.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/lean-back-2.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/lean-back-3.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/lean-forward-0.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/lean-forward-1.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/lean-forward-2.png": {
+      "width": 40,
+      "height": 30
+    },
+    "bike/lean-forward-3.png": {
+      "width": 40,
+      "height": 30
+    },
     "fx/explosion-0.png": {
       "width": 34,
       "height": 34

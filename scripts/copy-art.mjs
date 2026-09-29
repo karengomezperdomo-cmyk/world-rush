@@ -24,6 +24,13 @@ const FILES = [
   'bike/ragdoll-1.png',
   'bike/ragdoll-2.png',
   'bike/ragdoll-3.png',
+  // Wheel-spin frames for each pose, and the impact effects. The effects were generated from the start but
+  // never copied, so nothing could ever render them.
+  ...['ride', 'lean-back', 'lean-forward'].flatMap((pose) =>
+    [0, 1, 2, 3].map((frame) => `bike/${pose}-${frame}.png`),
+  ),
+  ...Array.from({ length: 6 }, (_, index) => `fx/explosion-${index}.png`),
+  ...Array.from({ length: 4 }, (_, index) => `fx/dust-${index}.png`),
   // The Home screen's week grid, header and hero.
   'logo/rush7.png',
   ...['sunset-canyon','coral-coast','emerald-woods','steel-yard','magma-ridge','frost-peak','orbit-circuit'].map(

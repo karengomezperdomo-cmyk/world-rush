@@ -1,5 +1,6 @@
 import {
   createBikeSimulation,
+  groundYAt,
   hasInput,
   INPUT,
   TICK_SECONDS,
@@ -8,6 +9,7 @@ import {
   type Level,
 } from '@worldrush/game-core';
 import { Application, Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
+import { createEffects, type EffectTextures } from './effects';
 import { createInputTracker, type InputTracker } from './input';
 import { createScenery, themeFor, type MapTheme } from './scenery';
 import { loadPhysicsEngine } from './physics-loader';
@@ -54,12 +56,46 @@ const ART_SCALE = PIXELS_PER_METRE / ART_PIXELS_PER_METRE;
  */
 const BIKE_ANCHOR = { x: 20 / 40, y: 14 / 30 } as const;
 
-const BIKE_TEXTURES = {
-  ride: '/art/bike/ride.png',
-  leanBack: '/art/bike/lean-back.png',
-  leanForward: '/art/bike/lean-forward.png',
-  crashed: '/art/bike/ragdoll-0.png',
-} as const;
+/** Frames per wheel revolution-sixth. See tools/art/generate.mjs for why four covers the cycle. */
+const SPIN_FRAME_COUNT = 4;
+/**
+ * How much wheel rotation the four frames are spread across.
+ *
+ * The art itself repeats every 60 degrees (tread blocks every 30, alternating; spokes every 60), so a sixth
+ * of a turn is the physically honest answer — and it strobes. At 18 m/s the wheel turns about 49 degrees per
+ * tick, nearly a whole art period, so consecutive frames land almost anywhere: measured, the sequence came
+ * out 0 3 1 0 2 0 3 1, which reads as random flicker rather than rotation. This is the wagon-wheel effect,
+ * and no choice of four frames can beat the sampling rate.
+ *
+ * So the frames are deliberately geared down over a full turn instead. The wheel then advances about half a
+ * frame per tick at top speed and always cycles forwards. It is a cosmetic lie about how fast the tread is
+ * moving, told to avoid a much more distracting one.
+ */
+const SPIN_PERIOD_RADIANS = Math.PI * 2;
+/** How long the ragdoll takes to tumble through its four frames after a crash. */
+const RAGDOLL_FRAME_MS = 90;
+/**
+ * Metres above the ground within which the bike counts as riding on it, for dust.
+ *
+ * Measured, not guessed: riding Sunset Canyon headless, the chassis sits 0.63-0.72 m above the surface,
+ * and rises past 1.37 m as soon as it is airborne. 0.95 sits clearly between the two. The first attempt used
+ * 0.75, which is inside the riding range itself, so dust fired on roughly every other frame and read as a
+ * glitch rather than as a wheel biting.
+ */
+const GROUNDED_TOLERANCE_METRES = 0.95;
+/** Dust is thrown at most this often; any faster and it is a solid smear rather than puffs. */
+const DUST_INTERVAL_MS = 85;
+/** Below this speed the wheel is not biting hard enough to throw anything up. */
+const DUST_MIN_SPEED = 3.5;
+
+const POSES = ['ride', 'leanBack', 'leanForward'] as const;
+type Pose = (typeof POSES)[number];
+
+const POSE_FILES: Record<Pose, string> = {
+  ride: 'ride',
+  leanBack: 'lean-back',
+  leanForward: 'lean-forward',
+};
 
 export interface GameHandle {
   /** The current simulation state, for a HUD to poll. */
@@ -115,8 +151,14 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
   app.stage.addChild(world);
   world.addChild(drawLevel(level, theme));
 
-  const bike = createBikeSprite(textures.ride);
+  const bike = createBikeSprite(textures.poses.ride[0]!);
   world.addChild(bike);
+
+  // Added after the bike so dust and debris sit in front of it.
+  const effects = createEffects(textures.effects);
+  world.addChild(effects.container);
+  let wasCrashed = false;
+  let dustDueInMs = 0;
 
   const input: InputTracker = createInputTracker();
 
@@ -147,6 +189,7 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
 
   function render(state: BikeState, held: InputMask): void {
     scenery.update(state.x * PIXELS_PER_METRE, app.screen.width, app.screen.height);
+    updateEffects(state, held, app.ticker.deltaMS);
     bike.texture = pickBikeTexture(textures, state, held);
     bike.position.set(state.x * PIXELS_PER_METRE, -state.y * PIXELS_PER_METRE);
     bike.rotation = -state.angle;
@@ -155,6 +198,31 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
       app.screen.width * CAMERA_ANCHOR_X - state.x * PIXELS_PER_METRE,
       app.screen.height * CAMERA_ANCHOR_Y + state.y * PIXELS_PER_METRE,
     );
+  }
+
+  function updateEffects(state: BikeState, held: InputMask, deltaMs: number): void {
+    const rearX = (state.x - 0.55) * PIXELS_PER_METRE;
+    const wheelY = -(state.y - 0.35) * PIXELS_PER_METRE;
+
+    if (state.crashed && !wasCrashed) {
+      effects.explosion(state.x * PIXELS_PER_METRE, -state.y * PIXELS_PER_METRE, ART_SCALE);
+    }
+    // Respawn: clear the wreckage rather than leave a puff hanging where the bike used to be.
+    if (wasCrashed && !state.crashed) effects.clear();
+    wasCrashed = state.crashed;
+
+    dustDueInMs -= deltaMs;
+    const groundY = groundYAt(level, state.x);
+    const grounded =
+      groundY !== undefined && state.y - groundY < GROUNDED_TOLERANCE_METRES && !state.crashed;
+    const driving = hasInput(held, INPUT.GAS) || hasInput(held, INPUT.BRAKE);
+    if (grounded && driving && Math.abs(state.vx) > DUST_MIN_SPEED && dustDueInMs <= 0) {
+      dustDueInMs = DUST_INTERVAL_MS;
+      // Thrown backwards, against the direction of travel.
+      effects.dust(rearX, wheelY, -Math.sign(state.vx) * 1.6, ART_SCALE);
+    }
+
+    effects.update(deltaMs);
   }
 
   render(simulation.getState(), 0);
@@ -171,6 +239,8 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
       accumulatorMs = 0;
     },
     restart() {
+      effects.clear();
+      wasCrashed = false;
       simulation.dispose();
       simulation = createBikeSimulation(engine, level);
       accumulatorMs = 0;
@@ -263,23 +333,42 @@ function drawLevel(level: Level, theme: MapTheme): Container {
   return container;
 }
 
-type BikeTextures = Record<keyof typeof BIKE_TEXTURES, Texture>;
-
-async function loadBikeTextures(): Promise<BikeTextures> {
-  const entries = Object.entries(BIKE_TEXTURES) as [keyof typeof BIKE_TEXTURES, string][];
-  const loaded = await Promise.all(
-    entries.map(async ([name, url]) => {
-      const texture = await Assets.load<Texture>(url);
-      // Pixel art: 'linear' would blur it into mush at this scale. Set per texture rather than globally so
-      // nothing else Pixi loads later is forced to the same filtering.
-      texture.source.scaleMode = 'nearest';
-      return [name, texture] as const;
-    }),
-  );
-  return Object.fromEntries(loaded) as BikeTextures;
+interface BikeTextures {
+  /** Indexed by pose, then by wheel-spin frame. */
+  readonly poses: Record<Pose, Texture[]>;
+  readonly ragdoll: Texture[];
+  readonly effects: EffectTextures;
 }
 
-/** The provisional hero bike from `design/art/bike/`, aligned to the physics body via `BIKE_ANCHOR`. */
+async function loadPixelTexture(url: string): Promise<Texture> {
+  const texture = await Assets.load<Texture>(url);
+  // Pixel art: 'linear' would blur it into mush at this scale. Set per texture rather than globally so
+  // nothing else Pixi loads later is forced to the same filtering.
+  texture.source.scaleMode = 'nearest';
+  return texture;
+}
+
+async function loadFrames(urls: readonly string[]): Promise<Texture[]> {
+  return Promise.all(urls.map(loadPixelTexture));
+}
+
+async function loadBikeTextures(): Promise<BikeTextures> {
+  const frameIndices = Array.from({ length: SPIN_FRAME_COUNT }, (_, index) => index);
+  const [ride, leanBack, leanForward, ragdoll, explosion, dust] = await Promise.all([
+    ...POSES.map((pose) =>
+      loadFrames(frameIndices.map((frame) => `/art/bike/${POSE_FILES[pose]}-${frame}.png`)),
+    ),
+    loadFrames(frameIndices.map((frame) => `/art/bike/ragdoll-${frame}.png`)),
+    loadFrames(Array.from({ length: 6 }, (_, index) => `/art/fx/explosion-${index}.png`)),
+    loadFrames(Array.from({ length: 4 }, (_, index) => `/art/fx/dust-${index}.png`)),
+  ]);
+  return {
+    poses: { ride: ride!, leanBack: leanBack!, leanForward: leanForward! },
+    ragdoll: ragdoll!,
+    effects: { explosion: explosion!, dust: dust! },
+  };
+}
+
 function createBikeSprite(texture: Texture): Sprite {
   const sprite = new Sprite(texture);
   sprite.anchor.set(BIKE_ANCHOR.x, BIKE_ANCHOR.y);
@@ -288,12 +377,33 @@ function createBikeSprite(texture: Texture): Sprite {
 }
 
 /**
- * Swaps the bike frame to match what the rider is doing. Purely cosmetic — the physics never reads this, so
- * a wrong guess here can only ever look wrong, never change a run's outcome.
+ * The bike's current frame.
+ *
+ * While riding, the wheel frame comes from the rear wheel's ACTUAL rotation rather than from a timer, so the
+ * wheels slow with the bike, stop when it stops, and spin backwards when it rolls back — none of which a
+ * fixed-rate animation would do. While crashed, the ragdoll tumbles through its frames once and holds on the
+ * last, which is what makes a crash read as an event rather than a pose.
  */
 function pickBikeTexture(textures: BikeTextures, state: BikeState, held: InputMask): Texture {
-  if (state.crashed) return textures.crashed;
-  if (hasInput(held, INPUT.LEAN_BACK)) return textures.leanBack;
-  if (hasInput(held, INPUT.LEAN_FORWARD)) return textures.leanForward;
-  return textures.ride;
+  if (state.crashed) {
+    const frame = Math.min(
+      textures.ragdoll.length - 1,
+      Math.floor((state.crashedTicksAgo * TICK_SECONDS * 1000) / RAGDOLL_FRAME_MS),
+    );
+    return textures.ragdoll[frame]!;
+  }
+  const pose: Pose = hasInput(held, INPUT.LEAN_BACK)
+    ? 'leanBack'
+    : hasInput(held, INPUT.LEAN_FORWARD)
+      ? 'leanForward'
+      : 'ride';
+  const frames = textures.poses[pose];
+  // Negated: rolling forwards is clockwise on screen, which Box2D reports as a DECREASING angle, while the
+  // sprite frames are drawn at increasing spin. Without this the wheels turn backwards as the bike drives
+  // forwards — smoothly, and wrongly.
+  // Wrapped into one art period, keeping the result positive for negative angles.
+  const turn = -state.rearWheelAngle % SPIN_PERIOD_RADIANS;
+  const normalised = (turn + SPIN_PERIOD_RADIANS) % SPIN_PERIOD_RADIANS;
+  const frame = Math.floor((normalised / SPIN_PERIOD_RADIANS) * frames.length) % frames.length;
+  return frames[frame]!;
 }
