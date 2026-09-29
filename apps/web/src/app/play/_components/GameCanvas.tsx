@@ -1,10 +1,12 @@
 'use client';
 
 import { INPUT, type BikeState, type MapEntry } from '@worldrush/game-core';
-import type { GameHandle } from '@worldrush/game-client';
+import type { GameAudio, GameHandle } from '@worldrush/game-client';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { hapticCheckpoint, hapticCrash, hapticFinish } from '../../../lib/haptics';
 import { formatCountdown, millisecondsUntilNextRace, todaysMap } from '../../../lib/schedule';
+import { readSettings, SETTINGS_CHANGED_EVENT, type Settings } from '../../../lib/settings';
 import { dayKey, readBestTicks, recordRun } from '../../../lib/run-record';
 import { runTimeParts } from '../../../lib/run-time';
 import { Icon } from '../../_components/IconSprite';
@@ -55,6 +57,10 @@ export function GameCanvas() {
   const lastCheckpointRef = useRef(-1);
   const finishedRef = useRef(false);
   const [crashCount, setCrashCount] = useState(0);
+  const audioRef = useRef<GameAudio | null>(null);
+  // Read from the game loop every frame, so it must be a ref rather than state.
+  const settingsRef = useRef<Settings>(readSettings());
+  const [swapSides, setSwapSides] = useState(false);
 
   const resetRunBookkeeping = useCallback(() => {
     crashCountRef.current = 0;
@@ -64,6 +70,19 @@ export function GameCanvas() {
     finishedRef.current = false;
     setCrashCount(0);
     setFinish(null);
+  }, []);
+
+  useEffect(() => {
+    const apply = (next: Settings) => {
+      settingsRef.current = next;
+      setSwapSides(next.swapSides);
+      audioRef.current?.setSoundEffects(next.soundEffects);
+      audioRef.current?.setMusic(next.music);
+    };
+    apply(readSettings());
+    const onChange = (event: Event) => apply((event as CustomEvent<Settings>).detail);
+    window.addEventListener(SETTINGS_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, onChange);
   }, []);
 
   useEffect(() => {
@@ -82,16 +101,24 @@ export function GameCanvas() {
       if (next.crashed && !wasCrashedRef.current) {
         crashCountRef.current += 1;
         setCrashCount(crashCountRef.current);
+        audioRef.current?.crash();
+        if (settingsRef.current.vibration) hapticCrash();
       }
       wasCrashedRef.current = next.crashed;
 
       if (next.checkpointIndex > lastCheckpointRef.current) {
         lastCheckpointRef.current = next.checkpointIndex;
         splitsRef.current = [...splitsRef.current, next.tick];
+        audioRef.current?.checkpoint();
+        if (settingsRef.current.vibration) hapticCheckpoint();
       }
+
+      audioRef.current?.engine(next.vx ?? 0, !next.crashed && !next.finished);
 
       if (next.finished && !finishedRef.current) {
         finishedRef.current = true;
+        audioRef.current?.finish();
+        if (settingsRef.current.vibration) hapticFinish();
         const ticks = next.finishTick ?? next.tick;
         const result = recordRun(entry.level.id, dayKey(new Date()), ticks);
         setFinish({ ticks, splitTicks: splitsRef.current, ...result });
@@ -106,8 +133,13 @@ export function GameCanvas() {
     // loading them during the server render would fail.
     void (async () => {
       try {
-        const { startGame } = await import('@worldrush/game-client');
+        const { startGame, createGameAudio } = await import('@worldrush/game-client');
         if (cancelled) return;
+        const settings = settingsRef.current;
+        audioRef.current = createGameAudio({
+          soundEffects: settings.soundEffects,
+          music: settings.music,
+        });
         handle = await startGame({ parent, level: entry.level, onState });
         if (cancelled) {
           handle.destroy();
@@ -129,6 +161,8 @@ export function GameCanvas() {
       handle?.destroy();
       handle = null;
       handleRef.current = null;
+      audioRef.current?.dispose();
+      audioRef.current = null;
     };
   }, []);
 
@@ -141,6 +175,8 @@ export function GameCanvas() {
     const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
   }, [paused]);
+
+  const unlockAudio = useCallback(() => audioRef.current?.resume(), []);
 
   const pause = useCallback(() => {
     handleRef.current?.pause();
@@ -218,7 +254,8 @@ export function GameCanvas() {
         <i className="goal" />
       </div>
 
-      <div className="pads-a">
+      {/* "Swap sides" mirrors the two clusters, so gas and brake fall under the left thumb. */}
+      <div className={swapSides ? 'pads-a swapped' : 'pads-a'} onPointerDown={unlockAudio}>
         <div className="pad-cluster">
           {PADS.slice(0, 2).map((pad, index) => (
             <PadButton key={pad.label} pad={pad} index={index} padRefs={padRefs} />

@@ -11,6 +11,7 @@ import {
   type ScheduledMap,
 } from '../../lib/schedule';
 import { Icon } from './IconSprite';
+import { TabBar } from './TabBar';
 
 /**
  * The Home screen from `design/screens/home.html`, wired to the real maps and the real clock.
@@ -94,7 +95,9 @@ export function Home({ session }: { session: HomeSession }) {
 
   const today = todaysMap(now);
   const week = weekSchedule(now);
-  const displayName = session.username ?? session.walletAddress?.slice(0, 6) ?? 'RIDER';
+  // World's Mini App guidelines say to "Display usernames instead of wallet addresses", so a missing
+  // username falls back to a neutral word rather than to 0x7f49 — which is the address, just shortened.
+  const displayName = session.username ?? 'RIDER';
 
   return (
     <div className="screen">
@@ -175,25 +178,7 @@ export function Home({ session }: { session: HomeSession }) {
         ))}
       </section>
 
-      {/* Four tabs. REWARDS stays behind a flag until it is real (decision A7). */}
-      <nav className="tabbar">
-        <span className="tab on">
-          <Icon name="home" />
-          HOME
-        </span>
-        <span className="tab" aria-disabled="true" title="Coming in Phase 7">
-          <Icon name="trophy" />
-          LEADERBOARD
-        </span>
-        <span className="tab" aria-disabled="true" title="Not built yet">
-          <Icon name="help" />
-          HOW TO PLAY
-        </span>
-        <span className="tab" aria-disabled="true" title="Not built yet">
-          <Icon name="gear" />
-          SETTINGS
-        </span>
-      </nav>
+      <TabBar active="home" />
     </div>
   );
 }

@@ -315,3 +315,31 @@ body {
   max-width: 220px;
   margin: 0 auto;
 }
+
+/* "Swap sides": gas and brake move to the left thumb. Reversing the flex row moves the whole cluster, which
+   is what the setting promises — not just mirroring the icons. */
+.game-screen .pads-a.swapped {
+  flex-direction: row-reverse;
+}
+
+/* Settings: the page scrolls, so it needs the same clearance under the fixed tab bar the menu has, and the
+   sign-out button has to sit in a row that `screens.css` sizes for a toggle. */
+.screen .page {
+  padding-bottom: calc(76px + var(--safe-bottom));
+}
+
+.screen .set-action {
+  flex: none;
+  width: auto;
+  height: 34px;
+  padding: 0 14px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.screen .toggle {
+  flex: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
