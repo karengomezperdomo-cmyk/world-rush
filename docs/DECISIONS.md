@@ -297,6 +297,55 @@ hidden page gets **zero** `requestAnimationFrame` callbacks (`document.hidden ==
 the pane visible the same long map runs at 13.96 s of simulation per 14 s of wall clock — exact real time.
 Before treating slowness in that browser as real, check `document.visibilityState`.
 
+## 1j. Phase 6 (2026-09-29): the other six maps, and three bugs a clean lap can never show
+
+All seven maps now exist and every one is proven finishable by an automated rider. Getting there exposed three
+defects that had nothing to do with level design, and every one of them was invisible while the ride went well.
+
+**1. Maps 2-7 shipped with no `finishX` at all.** Nothing could ever finish; the rider simply drove off the end
+of the world. `Level` requires the field and `tsc` would have rejected it, but vitest does not typecheck, so the
+test suite ran green on the parts it could see. Lesson: a test suite that imports data is not a substitute for
+typechecking that data, and `pnpm -r typecheck` belongs in the loop next to `pnpm test`.
+
+**2. Respawn read the checkpoint's x but the bike's last-contact y.** Those are two different places. On any map
+with real elevation change the bike rematerialised *inside* the terrain, Box2D ejected it, the ejection counted
+as a crash, and it respawned into the same rock again — 200+ times in a row, permanently stuck. Map 1 is nearly
+flat, which is the only reason this looked fine for a week. `groundYAt(level, x)` now interpolates the ground
+height at the respawn point itself.
+
+**3. Checkpoints were typed at round numbers, and round numbers are not geometry.** They landed on takeoff lips,
+inside gaps (Orbit Circuit had one hanging in mid-air over a 14 m hole), or a few metres in front of a jump. A
+checkpoint is where the rider restarts *from rest*, so it needs enough road ahead to rebuild speed — roughly
+45 m for a 12 m gap. Six of the seven maps had at least one checkpoint that ended a run permanently. They are
+now derived from the track by `autoCheckpoints()` and are correct by construction; `defineLevel()` applies it,
+asking for a longer run-up on low-friction maps.
+
+### The jump budget is now measured, not assumed
+
+A parametric sweep (runway x ramp x gap, same autopilot as the tests) against this exact physics build:
+
+| approach to the lip  | takeoff speed | widest gap actually cleared                           |
+| -------------------- | ------------- | ----------------------------------------------------- |
+| 34 m from standstill | ~15.0 m/s     | 12-13 m, and only off a steep ramp                    |
+| 70 m from standstill | ~17.5 m/s     | 16 m (17 m only off a very steep, speed-killing ramp) |
+
+So 14 m is the working ceiling. The first draft of maps 5 and 7 asked for 15-17 m gaps after 18-22 m run-ups:
+not "hard", impossible. Two further rules fell out of the same measurements: **the approach sets the maximum
+gap, not the ramp**, and **a 13-14 m gap must land at least ~1.4 m lower**, because the bike falls that far
+crossing it — a 0.4 m step-down crashed the rider every single time.
+
+### An honest correction about ice
+
+`groundFriction: 0.45` was documented as a major difficulty lever. Measured, it is not: on a long runway the bike
+reaches the **same** top speed, it just takes much longer to get there. Its real cost is slow recovery after a
+crash and weak braking. Frost Peak's comments now say that rather than what the "huge air" tagline implies.
+
+### What the tests now guarantee
+
+`maps.test.ts` (77 tests) covers structural invariants, one completability run per map, and — the one that
+matters after a crash — a restart-from-every-checkpoint run. All seven finish in 44-50 s of simulated time,
+inside decision B4's 45-90 s target. The maps are data only: no scene art exists for maps 2-7 (see §4b).
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·
