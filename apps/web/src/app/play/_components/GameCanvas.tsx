@@ -1,6 +1,6 @@
 'use client';
 
-import { INPUT, type BikeState, type MapEntry } from '@worldrush/game-core';
+import { INPUT, mapByNumber, type BikeState, type MapEntry } from '@worldrush/game-core';
 import type { GameAudio, GameHandle } from '@worldrush/game-client';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -33,6 +33,22 @@ interface FinishSummary {
   readonly splitTicks: readonly number[];
   readonly isBest: boolean;
   readonly previousBestTicks: number | null;
+}
+
+/**
+ * DEV ONLY: `/play?map=5` loads that map instead of today's.
+ *
+ * Seven maps open one per day, so on any given day six of them cannot be reached at all — which means six
+ * sets of scenery, ramps and difficulty tuning that nobody can look at before they go live. This exists to
+ * look at them.
+ *
+ * Dead in production: `process.env.NODE_ENV` is inlined at build time, so the branch is compiled away
+ * entirely rather than merely being guarded at runtime. It must never become a way to play a map out of turn.
+ */
+function devMapOverride(): MapEntry | undefined {
+  if (process.env.NODE_ENV !== 'development') return undefined;
+  const requested = Number(new URLSearchParams(window.location.search).get('map'));
+  return Number.isInteger(requested) ? mapByNumber(requested) : undefined;
 }
 
 export function GameCanvas() {
@@ -89,7 +105,7 @@ export function GameCanvas() {
     const parent = stageRef.current;
     if (!parent) return;
 
-    const entry = todaysMap(new Date());
+    const entry = devMapOverride() ?? todaysMap(new Date());
     setMap(entry);
     setBestTicks(readBestTicks(entry.level.id, dayKey(new Date())));
 

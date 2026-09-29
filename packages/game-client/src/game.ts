@@ -9,6 +9,7 @@ import {
 } from '@worldrush/game-core';
 import { Application, Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { createInputTracker, type InputTracker } from './input';
+import { createScenery, themeFor, type MapTheme } from './scenery';
 import { loadPhysicsEngine } from './physics-loader';
 
 const PIXELS_PER_METRE = 56;
@@ -24,13 +25,20 @@ const MAX_TICKS_PER_FRAME = 8;
 /** How far below the lowest ground point the filled "earth" extends, so gaps read as deep, not thin. */
 const GROUND_SKIRT_METRES = 8;
 
-const COLOUR = {
-  sky: 0x2b1b3d,
-  ground: 0x4a2d3a,
-  groundLine: 0xff8a3a, // Sunset Canyon's accent (design/art/manifest.json)
-  checkpoint: 0x49d0a0,
-  finish: 0xff5d73,
-} as const;
+/** Thickness of the coloured band along the top of the ground: grass, sand, snow, crust. */
+const SURFACE_METRES = 0.32;
+/**
+ * Climb steeper than this is drawn as a BUILT ramp rather than as earth — planks and a lit lip.
+ * 0.11 is about 6 degrees, which is where the maps' takeoffs start (a 2 m rise over 16 m is 0.125) and
+ * comfortably above the rolling terrain in between, so hills do not sprout scaffolding.
+ */
+const RAMP_SLOPE = 0.11;
+/**
+ * ...and it must be a real run-up, not a bump. Emerald Woods' roots are 6 m long at slope 0.117, which
+ * clears the angle test on its own and had them sprouting plank ramps; the maps' actual takeoffs are
+ * 10-20 m.
+ */
+const RAMP_MIN_RUN_METRES = 9;
 
 /**
  * The provisional art is pixel art authored at 20 art-pixels per physics metre: `design/art/bike/ride.png`
@@ -83,10 +91,13 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
   // Reassigned by restart(), which throws the old world away rather than trying to rewind it.
   let simulation = createBikeSimulation(engine, level);
 
+  const theme = themeFor(level.id);
   const app = new Application();
   await app.init({
     resizeTo: parent,
-    backgroundColor: COLOUR.sky,
+    // Only ever visible for the frame before the sky sprite is sized; keeping it in the theme's palette
+    // means even that frame is the right colour.
+    backgroundColor: Number.parseInt(theme.skyTop.slice(1), 16),
     // Off on purpose: the art is pixel art, and antialiasing it just makes it muddy.
     antialias: false,
     autoDensity: true,
@@ -96,9 +107,13 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
 
   const textures = await loadBikeTextures();
 
+  // Behind everything: sky, then two ridges that scroll at a fraction of the camera's speed.
+  const scenery = createScenery(theme);
+  app.stage.addChild(scenery.container);
+
   const world = new Container();
   app.stage.addChild(world);
-  world.addChild(drawLevel(level));
+  world.addChild(drawLevel(level, theme));
 
   const bike = createBikeSprite(textures.ride);
   world.addChild(bike);
@@ -131,6 +146,7 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
   };
 
   function render(state: BikeState, held: InputMask): void {
+    scenery.update(state.x * PIXELS_PER_METRE, app.screen.width, app.screen.height);
     bike.texture = pickBikeTexture(textures, state, held);
     bike.position.set(state.x * PIXELS_PER_METRE, -state.y * PIXELS_PER_METRE);
     bike.rotation = -state.angle;
@@ -174,29 +190,57 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
 }
 
 /** Ground, checkpoints and finish line. Static: drawn once, moved by the camera. */
-function drawLevel(level: Level): Container {
+function drawLevel(level: Level, theme: MapTheme): Container {
   const container = new Container();
-  const strips = level.ground.map((groundStrip) =>
-    groundStrip.map(([x, y]): [number, number] => [x * PIXELS_PER_METRE, -y * PIXELS_PER_METRE]),
-  );
+  const toScreen = ([x, y]: readonly [number, number]): [number, number] => [
+    x * PIXELS_PER_METRE,
+    -y * PIXELS_PER_METRE,
+  ];
 
   // Each ground span is filled down to a skirt below the lowest point so the track reads as solid earth.
-  // The skirt is shared across strips so they sit on a common canyon floor instead of floating at
-  // different depths — but nothing is drawn BETWEEN strips, so the gaps read as real holes.
-  const lowest =
-    Math.max(...strips.flat().map(([, y]) => y)) + GROUND_SKIRT_METRES * PIXELS_PER_METRE;
+  // The skirt is shared across strips so they sit on a common floor instead of floating at different
+  // depths — but nothing is drawn BETWEEN strips, so the gaps read as real holes.
+  const lowestMetres = Math.min(...level.ground.flat().map(([, y]) => y)) - GROUND_SKIRT_METRES;
+  const floor = -lowestMetres * PIXELS_PER_METRE;
+
   const surface = new Graphics();
-  for (const points of strips) {
-    for (let i = 0; i < points.length - 1; i++) {
-      const a = points[i];
-      const b = points[i + 1];
+  for (const groundStrip of level.ground) {
+    for (let i = 0; i < groundStrip.length - 1; i++) {
+      const a = groundStrip[i];
+      const b = groundStrip[i + 1];
       if (!a || !b) continue;
+      const run = b[0] - a[0];
+      if (run <= 0) continue;
+      // Rising only: a takeoff is a built thing, a landing slope is just ground.
+      const isRamp = run >= RAMP_MIN_RUN_METRES && (b[1] - a[1]) / run > RAMP_SLOPE;
+      const [ax, ay] = toScreen(a);
+      const [bx, by] = toScreen(b);
+      const band = SURFACE_METRES * PIXELS_PER_METRE;
+
+      // Body, from the surface band down to the shared floor.
       surface
-        .poly([a[0], a[1], b[0], b[1], b[0], lowest, a[0], lowest])
-        .fill(COLOUR.ground)
-        .moveTo(a[0], a[1])
-        .lineTo(b[0], b[1])
-        .stroke({ width: 3, color: COLOUR.groundLine });
+        .poly([ax, ay + band, bx, by + band, bx, floor, ax, floor])
+        .fill(isRamp ? theme.ramp : theme.ground);
+
+      // The band itself, which is what gives each map its footing at a glance.
+      surface
+        .poly([ax, ay, bx, by, bx, by + band, ax, ay + band])
+        .fill(isRamp ? theme.rampEdge : theme.surface);
+
+      if (isRamp) {
+        // Planks across the ramp, so a takeoff reads as a structure and the rider can see it coming.
+        const lengthPixels = Math.hypot(bx - ax, by - ay);
+        const planks = Math.max(1, Math.floor(lengthPixels / (0.9 * PIXELS_PER_METRE)));
+        for (let plank = 1; plank < planks; plank++) {
+          const t = plank / planks;
+          const px = ax + (bx - ax) * t;
+          const py = ay + (by - ay) * t;
+          surface
+            .moveTo(px, py + band)
+            .lineTo(px, py + band + 0.55 * PIXELS_PER_METRE)
+            .stroke({ width: 2, color: theme.ground, alpha: 0.55 });
+        }
+      }
     }
   }
   container.addChild(surface);
@@ -207,13 +251,13 @@ function drawLevel(level: Level): Container {
     markers
       .moveTo(x, 0)
       .lineTo(x, -3 * PIXELS_PER_METRE)
-      .stroke({ width: 3, color: COLOUR.checkpoint, alpha: 0.8 });
+      .stroke({ width: 3, color: theme.checkpoint, alpha: 0.8 });
   }
   const finishX = level.finishX * PIXELS_PER_METRE;
   markers
     .moveTo(finishX, 0)
     .lineTo(finishX, -3 * PIXELS_PER_METRE)
-    .stroke({ width: 5, color: COLOUR.finish });
+    .stroke({ width: 5, color: theme.finish });
   container.addChild(markers);
 
   return container;
