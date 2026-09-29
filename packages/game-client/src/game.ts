@@ -1,10 +1,13 @@
 import {
   createBikeSimulation,
+  hasInput,
+  INPUT,
   TICK_SECONDS,
   type BikeState,
+  type InputMask,
   type Level,
 } from '@worldrush/game-core';
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { createInputTracker, type InputTracker } from './input';
 import { loadPhysicsEngine } from './physics-loader';
 
@@ -18,16 +21,36 @@ const CAMERA_ANCHOR_Y = 0.62;
  * ruined for leaderboard purposes anyway, which Phase 7's server-side replay check is what actually enforces.
  */
 const MAX_TICKS_PER_FRAME = 8;
+/** How far below the lowest ground point the filled "earth" extends, so gaps read as deep, not thin. */
+const GROUND_SKIRT_METRES = 8;
 
 const COLOUR = {
-  ground: 0x2c3350,
-  groundLine: 0x6f7bb0,
-  chassis: 0xffc247,
-  wheel: 0x11131f,
-  wheelSpoke: 0x6f7bb0,
+  sky: 0x2b1b3d,
+  ground: 0x4a2d3a,
+  groundLine: 0xff8a3a, // Sunset Canyon's accent (design/art/manifest.json)
   checkpoint: 0x49d0a0,
   finish: 0xff5d73,
-  crashed: 0xff5d73,
+} as const;
+
+/**
+ * The provisional art is pixel art authored at 20 art-pixels per physics metre: `design/art/bike/ride.png`
+ * is 40x30 and its wheel centres sit 22 px apart, which is the bike's real 1.10 m wheelbase
+ * (`bike-sim.ts` puts the wheels at ±0.55 m). Everything below follows from that one measurement.
+ */
+const ART_PIXELS_PER_METRE = 20;
+const ART_SCALE = PIXELS_PER_METRE / ART_PIXELS_PER_METRE;
+/**
+ * Where the chassis body's origin sits inside the 40x30 bike sprite, as a 0-1 anchor. Horizontally it is
+ * the midpoint of the two wheels (x=20). Vertically the wheels are drawn at y=21 and the physics puts them
+ * 0.35 m below the chassis centre, i.e. 7 art pixels, so the chassis centre is y=14.
+ */
+const BIKE_ANCHOR = { x: 20 / 40, y: 14 / 30 } as const;
+
+const BIKE_TEXTURES = {
+  ride: '/art/bike/ride.png',
+  leanBack: '/art/bike/lean-back.png',
+  leanForward: '/art/bike/lean-forward.png',
+  crashed: '/art/bike/ragdoll-0.png',
 } as const;
 
 export interface GameHandle {
@@ -53,19 +76,22 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
   const app = new Application();
   await app.init({
     resizeTo: parent,
-    backgroundColor: 0x0b1020,
-    antialias: true,
+    backgroundColor: COLOUR.sky,
+    // Off on purpose: the art is pixel art, and antialiasing it just makes it muddy.
+    antialias: false,
     autoDensity: true,
     resolution: window.devicePixelRatio,
   });
   parent.appendChild(app.canvas);
 
+  const textures = await loadBikeTextures();
+
   const world = new Container();
   app.stage.addChild(world);
   world.addChild(drawLevel(level));
 
-  const bike = createBikeSprite();
-  world.addChild(bike.root);
+  const bike = createBikeSprite(textures.ride);
+  world.addChild(bike);
 
   const input: InputTracker = createInputTracker();
 
@@ -77,21 +103,20 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
     accumulatorMs -= ticks * tickMs;
     if (ticks > MAX_TICKS_PER_FRAME) ticks = MAX_TICKS_PER_FRAME;
 
+    let heldInput: InputMask = 0;
     if (ticks > 0) {
-      const mask = input.getMask();
-      for (let i = 0; i < ticks; i++) simulation.step(mask);
+      heldInput = input.getMask();
+      for (let i = 0; i < ticks; i++) simulation.step(heldInput);
       onState?.(simulation.getState());
     }
 
-    render(simulation.getState());
+    render(simulation.getState(), heldInput);
   };
 
-  function render(state: BikeState): void {
-    bike.root.position.set(state.x * PIXELS_PER_METRE, -state.y * PIXELS_PER_METRE);
-    bike.root.rotation = -state.angle;
-    bike.rearWheel.rotation = -state.rearWheelAngle;
-    bike.frontWheel.rotation = -state.frontWheelAngle;
-    bike.chassis.tint = state.crashed ? COLOUR.crashed : 0xffffff;
+  function render(state: BikeState, held: InputMask): void {
+    bike.texture = pickBikeTexture(textures, state, held);
+    bike.position.set(state.x * PIXELS_PER_METRE, -state.y * PIXELS_PER_METRE);
+    bike.rotation = -state.angle;
 
     world.position.set(
       app.screen.width * CAMERA_ANCHOR_X - state.x * PIXELS_PER_METRE,
@@ -99,7 +124,7 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
     );
   }
 
-  render(simulation.getState());
+  render(simulation.getState(), 0);
   app.ticker.add(onTick);
 
   return {
@@ -118,24 +143,28 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
 /** Ground, checkpoints and finish line. Static: drawn once, moved by the camera. */
 function drawLevel(level: Level): Container {
   const container = new Container();
-  const points = level.ground.map(([x, y]): [number, number] => [
-    x * PIXELS_PER_METRE,
-    -y * PIXELS_PER_METRE,
-  ]);
+  const strips = level.ground.map((groundStrip) =>
+    groundStrip.map(([x, y]): [number, number] => [x * PIXELS_PER_METRE, -y * PIXELS_PER_METRE]),
+  );
 
   // Each ground span is filled down to a skirt below the lowest point so the track reads as solid earth.
-  const lowest = Math.max(...points.map(([, y]) => y)) + 6 * PIXELS_PER_METRE;
+  // The skirt is shared across strips so they sit on a common canyon floor instead of floating at
+  // different depths — but nothing is drawn BETWEEN strips, so the gaps read as real holes.
+  const lowest =
+    Math.max(...strips.flat().map(([, y]) => y)) + GROUND_SKIRT_METRES * PIXELS_PER_METRE;
   const surface = new Graphics();
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i];
-    const b = points[i + 1];
-    if (!a || !b) continue;
-    surface
-      .poly([a[0], a[1], b[0], b[1], b[0], lowest, a[0], lowest])
-      .fill(COLOUR.ground)
-      .moveTo(a[0], a[1])
-      .lineTo(b[0], b[1])
-      .stroke({ width: 3, color: COLOUR.groundLine });
+  for (const points of strips) {
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i];
+      const b = points[i + 1];
+      if (!a || !b) continue;
+      surface
+        .poly([a[0], a[1], b[0], b[1], b[0], lowest, a[0], lowest])
+        .fill(COLOUR.ground)
+        .moveTo(a[0], a[1])
+        .lineTo(b[0], b[1])
+        .stroke({ width: 3, color: COLOUR.groundLine });
+    }
   }
   container.addChild(surface);
 
@@ -157,50 +186,37 @@ function drawLevel(level: Level): Container {
   return container;
 }
 
-interface BikeSprite {
-  root: Container;
-  chassis: Graphics;
-  rearWheel: Container;
-  frontWheel: Container;
+type BikeTextures = Record<keyof typeof BIKE_TEXTURES, Texture>;
+
+async function loadBikeTextures(): Promise<BikeTextures> {
+  const entries = Object.entries(BIKE_TEXTURES) as [keyof typeof BIKE_TEXTURES, string][];
+  const loaded = await Promise.all(
+    entries.map(async ([name, url]) => {
+      const texture = await Assets.load<Texture>(url);
+      // Pixel art: 'linear' would blur it into mush at this scale. Set per texture rather than globally so
+      // nothing else Pixi loads later is forced to the same filtering.
+      texture.source.scaleMode = 'nearest';
+      return [name, texture] as const;
+    }),
+  );
+  return Object.fromEntries(loaded) as BikeTextures;
+}
+
+/** The provisional hero bike from `design/art/bike/`, aligned to the physics body via `BIKE_ANCHOR`. */
+function createBikeSprite(texture: Texture): Sprite {
+  const sprite = new Sprite(texture);
+  sprite.anchor.set(BIKE_ANCHOR.x, BIKE_ANCHOR.y);
+  sprite.scale.set(ART_SCALE);
+  return sprite;
 }
 
 /**
- * Placeholder primitives matching `bike-sim.ts`'s collision shapes, deliberately not the real art: this is a
- * physics/controls spike, and drawing the actual bodies makes tuning problems visible.
+ * Swaps the bike frame to match what the rider is doing. Purely cosmetic — the physics never reads this, so
+ * a wrong guess here can only ever look wrong, never change a run's outcome.
  */
-function createBikeSprite(): BikeSprite {
-  const root = new Container();
-
-  const chassis = new Graphics();
-  const halfLength = 0.45 * PIXELS_PER_METRE;
-  const radius = 0.3 * PIXELS_PER_METRE;
-  chassis
-    .roundRect(-halfLength - radius, -radius, (halfLength + radius) * 2, radius * 2, radius)
-    .fill(COLOUR.chassis);
-  root.addChild(chassis);
-
-  const rearWheel = createWheel();
-  rearWheel.position.set(-0.55 * PIXELS_PER_METRE, 0.35 * PIXELS_PER_METRE);
-  const frontWheel = createWheel();
-  frontWheel.position.set(0.55 * PIXELS_PER_METRE, 0.35 * PIXELS_PER_METRE);
-  root.addChild(rearWheel, frontWheel);
-
-  return { root, chassis, rearWheel, frontWheel };
-}
-
-function createWheel(): Container {
-  const wheel = new Container();
-  const radius = 0.4 * PIXELS_PER_METRE;
-  const graphics = new Graphics();
-  graphics
-    .circle(0, 0, radius)
-    .fill(COLOUR.wheel)
-    .circle(0, 0, radius)
-    .stroke({ width: 3, color: COLOUR.wheelSpoke })
-    // A single spoke: without it a spinning circle looks stationary.
-    .moveTo(0, 0)
-    .lineTo(0, -radius)
-    .stroke({ width: 3, color: COLOUR.wheelSpoke });
-  wheel.addChild(graphics);
-  return wheel;
+function pickBikeTexture(textures: BikeTextures, state: BikeState, held: InputMask): Texture {
+  if (state.crashed) return textures.crashed;
+  if (hasInput(held, INPUT.LEAN_BACK)) return textures.leanBack;
+  if (hasInput(held, INPUT.LEAN_FORWARD)) return textures.leanForward;
+  return textures.ride;
 }

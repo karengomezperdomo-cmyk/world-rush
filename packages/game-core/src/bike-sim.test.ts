@@ -95,8 +95,18 @@ describe('createBikeSimulation physics sanity', () => {
     // Keep stepping through the fixed respawn delay.
     run(sim, Array<InputMask>(90).fill(0));
     const respawned = sim.getState();
-    sim.dispose();
     expect(respawned.crashed).toBe(false);
     expect(Math.abs(respawned.x - (TEST_LEVEL.checkpoints[0] ?? 0))).toBeLessThan(2);
+
+    // A respawn has to leave the bike RIDEABLE, not merely un-crashed. An earlier version teleported the
+    // chassis and both wheels to the same point; Box2D blew the overlapping bodies apart and the bike
+    // tipped straight over again, locking a real run into an endless crash loop at one checkpoint.
+    // 4 s, not 2: a respawn drops the bike stationary at the checkpoint, which on this track is the foot of
+    // the takeoff ramp, so it is accelerating uphill from a standstill.
+    run(sim, Array<InputMask>(240).fill(INPUT.GAS));
+    const afterRespawn = sim.getState();
+    sim.dispose();
+    expect(afterRespawn.crashed).toBe(false);
+    expect(afterRespawn.x).toBeGreaterThan(respawned.x + 3);
   });
 });

@@ -15,6 +15,9 @@ next-env.d.ts
 # Box2D WASM copied out of node_modules by scripts/copy-box2d.mjs (regenerated on predev/prebuild)
 apps/web/public/box2d/
 
+# Game art copied out of design/art by scripts/copy-art.mjs (regenerated on predev/prebuild)
+apps/web/public/art/
+
 # secrets: NEVER commit. Only .env.example is tracked.
 .env
 .env.*

@@ -38,12 +38,12 @@ export function GameCanvas() {
     // loading them during the server render would fail.
     void (async () => {
       try {
-        const [{ startGame }, { TEST_LEVEL }] = await Promise.all([
+        const [{ startGame }, { SUNSET_CANYON }] = await Promise.all([
           import('@worldrush/game-client'),
           import('@worldrush/game-core'),
         ]);
         if (cancelled) return;
-        handle = await startGame({ parent, level: TEST_LEVEL, onState: setState });
+        handle = await startGame({ parent, level: SUNSET_CANYON, onState: setState });
         if (cancelled) {
           handle.destroy();
           handle = null;

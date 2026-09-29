@@ -263,6 +263,40 @@ origin in `domain`, matching the confirmed real format, and still pass.
 from the Portal (a second instance of this, after the Neon DB password earlier — see §1g). Offered to rotate
 it; the owner declined ("no importa, sigamos asi") and that was respected — not a correction to force through.
 
+## 1i. Phase 6 (2026-09-28): Map 1 "Sunset Canyon" with the real art
+
+The first real map, replacing the Phase 5 spike track and its debug-primitive rendering. Chosen by the owner
+over wiring login→game or polishing the prototype.
+
+| Decision / finding                                                                          | Why                                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Level.ground` is now **an array of separate strips**, not one polyline                       | The spike track's "gap" was never a gap: `bike-sim` built a segment between *every* consecutive pair of points, so the documented hole was really a steep downhill the bike could not fail. Real jumps need real holes, and a single polyline can only describe a continuous surface. |
+| **Map 1 = `SUNSET_CANYON`**: ~726 m, 5 checkpoints, two real gaps (9 m and 12 m)              | Matches the art and the design manifest (MON, difficulty 1 of 5). Difficulty 1 means a rider who simply holds the throttle gets through: verified by a deterministic full-throttle ride-through that finishes in **45.9 s with zero crashes** — inside decision B4's 45-90 s window. |
+| Ramp *angle* matters more than ramp height                                                    | Measured, not guessed: a 2.2 m rise over 8 m backflips the bike at full speed, because nothing stops the rotation once airborne. Spreading the same climb over 16 m launches it level. The whole map is built from long, shallow transitions for this reason. |
+| The bike reaches **~15 m/s**, not the ~9 m/s the spike track suggested                        | A longer runway changes everything about gap sizing. Gaps here are sized against a measured launch, which is also why the first pass (15 m and 18 m gaps, one of them landing *uphill*) was unclearable. |
+| Art is copied `design/art/` → `apps/web/public/art/` by `scripts/copy-art.mjs` on predev/prebuild | Same reason `copy-box2d.mjs` exists: `design/` is a separate static board, not served by Next. Only what the game renders is copied; the mockup-only assets stay put. |
+| Sprite alignment is derived from one measurement, not eyeballed                                | `bike/ride.png` is 40x30 with wheel centres 22 px apart, which is the bike's real 1.10 m wheelbase → 20 art px per metre, anchor at (20/40, 14/30). `antialias: false` and `scaleMode: 'nearest'` keep the pixel art crisp. |
+
+### Two real bugs this map exposed
+
+**Respawn stacked the bodies.** `respawnAtCheckpoint` teleported the chassis and *both wheels* to the same
+point. Box2D resolves that overlap by blasting them apart, which knocks the bike over into another crash,
+which respawns it again — a real run locked into an endless crash loop at one checkpoint. Each body now goes
+back to its own offset. The Phase 5 test only asserted the bike was no longer `crashed`; it now also rides
+forward afterwards, which is what would have caught this.
+
+**A crest 24 m before the finish** threw the bike into a bad landing right on the line. Found by a
+deterministic full-throttle ride-through that reports crashes and airtime — a far faster tuning loop than
+driving in a browser, and immune to frame-timing variance.
+
+### A measurement trap worth remembering
+
+The game appeared to run at **3 FPS**, starving the simulation to 10 ticks/s, which nearly triggered a
+rewrite of the renderer into chunked culling. It was an artifact: the agent's browser pane was hidden, and a
+hidden page gets **zero** `requestAnimationFrame` callbacks (`document.hidden === true`, 0 rAF in 2 s). With
+the pane visible the same long map runs at 13.96 s of simulation per 14 s of wall clock — exact real time.
+Before treating slowness in that browser as real, check `document.visibilityState`.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·

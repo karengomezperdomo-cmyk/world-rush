@@ -95,20 +95,24 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
   worldDef.enableSleep = false;
   const worldId = b2CreateWorld(worldDef);
 
-  // --- Ground: one static segment per consecutive point pair. Box2D computes each segment's own geometry
-  // from the two raw points, so level authoring never needs Math.atan2 or any other engine-approximated trig.
+  // --- Ground: one static segment per consecutive point pair, WITHIN each strip. Segments are never made
+  // between strips, which is what makes the space between them a real hole rather than a steep slope.
+  // Box2D computes each segment's own geometry from the two raw points, so level authoring never needs
+  // Math.atan2 or any other engine-approximated trig.
   const groundDef = b2DefaultBodyDef();
   const groundId = b2CreateBody(worldId, groundDef);
-  for (let i = 0; i < level.ground.length - 1; i++) {
-    const a = level.ground[i];
-    const b = level.ground[i + 1];
-    if (!a || !b) continue;
-    const segment = new b2Segment();
-    segment.point1 = new b2Vec2(a[0], a[1]);
-    segment.point2 = new b2Vec2(b[0], b[1]);
-    const shapeDef = b2DefaultShapeDef();
-    shapeDef.material.friction = 1.0;
-    b2CreateSegmentShape(groundId, shapeDef, segment);
+  for (const groundStrip of level.ground) {
+    for (let i = 0; i < groundStrip.length - 1; i++) {
+      const a = groundStrip[i];
+      const b = groundStrip[i + 1];
+      if (!a || !b) continue;
+      const segment = new b2Segment();
+      segment.point1 = new b2Vec2(a[0], a[1]);
+      segment.point2 = new b2Vec2(b[0], b[1]);
+      const shapeDef = b2DefaultShapeDef();
+      shapeDef.material.friction = 1.0;
+      b2CreateSegmentShape(groundId, shapeDef, segment);
+    }
   }
 
   // --- Chassis ---
@@ -200,10 +204,19 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
     // Respawn a little above the recorded ground contact so the bike drops onto the track, not into it.
     const y = lastGoodTransform.y + 0.6;
     const zero = new b2Vec2(0, 0);
-    for (const body of [chassisId, rearWheel.id as never, frontWheel.id as never]) {
-      b2Body_SetTransform(body, new b2Vec2(x, y), b2Rot_identity);
-      b2Body_SetLinearVelocity(body, zero);
-      b2Body_SetAngularVelocity(body, 0);
+    // Each body goes back to its OWN offset, the same ones `createWheel` used. Teleporting all three to a
+    // single point stacks the wheels inside the chassis, and Box2D resolves that overlap by blasting them
+    // apart — which knocks the bike straight over into another crash, then another respawn. Found 2026-09-26
+    // by riding Sunset Canyon: one bad landing locked the run into an endless crash loop at a checkpoint.
+    const placements: [unknown, number, number][] = [
+      [chassisId, x, y],
+      [rearWheel.id, x - 0.55, y - 0.35],
+      [frontWheel.id, x + 0.55, y - 0.35],
+    ];
+    for (const [body, bodyX, bodyY] of placements) {
+      b2Body_SetTransform(body as never, new b2Vec2(bodyX, bodyY), b2Rot_identity);
+      b2Body_SetLinearVelocity(body as never, zero);
+      b2Body_SetAngularVelocity(body as never, 0);
     }
     crashed = false;
   }
