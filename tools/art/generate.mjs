@@ -11,6 +11,7 @@ import { gameplayFrame, heroScene } from './canyon.mjs';
 import { dustFrame, explosionFrame } from './fx.mjs';
 import { HERO_SCENES } from './heroes.mjs';
 import { logo } from './logo.mjs';
+import { marshal } from './marshal.mjs';
 import { MAPS } from './thumbs.mjs';
 
 const out = (path) => fileURLToPath(new URL(`../../design/art/${path}`, import.meta.url));
@@ -49,6 +50,10 @@ emit('scenes/gameplay-canyon.png', gameplayFrame({ groundAt: 0.62 }));
 emit('scenes/gameplay-canyon-crash.png', gameplayFrame({ crash: true, groundAt: 0.62 }));
 emit('scenes/gameplay-canyon-window.png', gameplayFrame({ height: 146 }));
 emit('logo/rush7.png', logo());
+// The checkpoint marshal: arms down until the rider takes the checkpoint, then both arms up, waving.
+emit('marshal/idle.png', marshal({ cheer: false }));
+emit('marshal/cheer-0.png', marshal({ cheer: true, frame: 0 }));
+emit('marshal/cheer-1.png', marshal({ cheer: true, frame: 1 }));
 for (let i = 0; i < AVATAR_COUNT; i++) emit(`avatars/a${i}.png`, avatar(i));
 for (const map of MAPS) emit(`thumbs/map-${map.n}-${map.slug}.png`, map.thumb());
 

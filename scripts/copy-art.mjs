@@ -31,6 +31,10 @@ const FILES = [
   ),
   ...Array.from({ length: 6 }, (_, index) => `fx/explosion-${index}.png`),
   ...Array.from({ length: 4 }, (_, index) => `fx/dust-${index}.png`),
+  // The checkpoint marshal: she replaces the plain line that used to mark a checkpoint.
+  'marshal/idle.png',
+  'marshal/cheer-0.png',
+  'marshal/cheer-1.png',
   // The Home screen's week grid, header and hero.
   'logo/rush7.png',
   ...['sunset-canyon','coral-coast','emerald-woods','steel-yard','magma-ridge','frost-peak','orbit-circuit'].map(

@@ -83,6 +83,8 @@ const RAGDOLL_FRAME_MS = 90;
  * glitch rather than as a wheel biting.
  */
 const GROUNDED_TOLERANCE_METRES = 0.95;
+/** How long each frame of the marshal's wave holds. */
+const MARSHAL_WAVE_MS = 190;
 /** Dust is thrown at most this often; any faster and it is a solid smear rather than puffs. */
 const DUST_INTERVAL_MS = 85;
 /** Below this speed the wheel is not biting hard enough to throw anything up. */
@@ -152,7 +154,8 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
 
   const world = new Container();
   app.stage.addChild(world);
-  world.addChild(drawLevel(level, theme));
+  const levelView = drawLevel(level, theme, textures.marshal[0]!);
+  world.addChild(levelView.container);
 
   const bike = createBikeSprite(textures.poses.ride[0]!);
   world.addChild(bike);
@@ -249,6 +252,13 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
       effects.dust(rearX, wheelY, -Math.sign(state.vx) * 1.6, ART_SCALE);
     }
 
+    // Every marshal the rider has already passed throws her arms up and waves; the rest wait, arms down.
+    const wave = 1 + (Math.floor(performance.now() / MARSHAL_WAVE_MS) % 2);
+    for (let index = 0; index < levelView.marshals.length; index++) {
+      const passed = index <= state.checkpointIndex;
+      levelView.marshals[index]!.texture = textures.marshal[passed ? wave : 0]!;
+    }
+
     effects.update(deltaMs);
   }
 
@@ -288,7 +298,13 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
 }
 
 /** Ground, checkpoints and finish line. Static: drawn once, moved by the camera. */
-function drawLevel(level: Level, theme: MapTheme): Container {
+interface LevelView {
+  readonly container: Container;
+  /** One per checkpoint, in order, so index N is checkpoint N. */
+  readonly marshals: Sprite[];
+}
+
+function drawLevel(level: Level, theme: MapTheme, marshalTexture: Texture): LevelView {
   const container = new Container();
   const toScreen = ([x, y]: readonly [number, number]): [number, number] => [
     x * PIXELS_PER_METRE,
@@ -375,13 +391,7 @@ function drawLevel(level: Level, theme: MapTheme): Container {
   container.addChild(surface);
 
   const markers = new Graphics();
-  for (const checkpointX of level.checkpoints) {
-    const x = checkpointX * PIXELS_PER_METRE;
-    markers
-      .moveTo(x, 0)
-      .lineTo(x, -3 * PIXELS_PER_METRE)
-      .stroke({ width: 3, color: theme.checkpoint, alpha: 0.8 });
-  }
+  // A finish line really is a line, so it stays one. Checkpoints are people now.
   const finishX = level.finishX * PIXELS_PER_METRE;
   markers
     .moveTo(finishX, 0)
@@ -389,7 +399,19 @@ function drawLevel(level: Level, theme: MapTheme): Container {
     .stroke({ width: 5, color: theme.finish });
   container.addChild(markers);
 
-  return container;
+  // The marshal stands at each checkpoint, on the ground rather than at a fixed height, so she is planted on
+  // the surface whatever the terrain does there. Anchored at her feet for the same reason.
+  const marshals = level.checkpoints.map((checkpointX) => {
+    const sprite = new Sprite(marshalTexture);
+    sprite.anchor.set(0.5, 1);
+    sprite.scale.set(ART_SCALE);
+    const groundY = groundYAt(level, checkpointX) ?? level.start.y;
+    sprite.position.set(checkpointX * PIXELS_PER_METRE, -groundY * PIXELS_PER_METRE);
+    container.addChild(sprite);
+    return sprite;
+  });
+
+  return { container, marshals };
 }
 
 interface BikeTextures {
@@ -397,6 +419,8 @@ interface BikeTextures {
   readonly poses: Record<Pose, Texture[]>;
   readonly ragdoll: Texture[];
   readonly effects: EffectTextures;
+  /** [arms down, arms up 0, arms up 1] — the checkpoint marshal. */
+  readonly marshal: Texture[];
 }
 
 async function loadPixelTexture(url: string): Promise<Texture> {
@@ -413,18 +437,20 @@ async function loadFrames(urls: readonly string[]): Promise<Texture[]> {
 
 async function loadBikeTextures(): Promise<BikeTextures> {
   const frameIndices = Array.from({ length: SPIN_FRAME_COUNT }, (_, index) => index);
-  const [ride, leanBack, leanForward, ragdoll, explosion, dust] = await Promise.all([
+  const [ride, leanBack, leanForward, ragdoll, explosion, dust, marshal] = await Promise.all([
     ...POSES.map((pose) =>
       loadFrames(frameIndices.map((frame) => `/art/bike/${POSE_FILES[pose]}-${frame}.png`)),
     ),
     loadFrames(frameIndices.map((frame) => `/art/bike/ragdoll-${frame}.png`)),
     loadFrames(Array.from({ length: 6 }, (_, index) => `/art/fx/explosion-${index}.png`)),
     loadFrames(Array.from({ length: 4 }, (_, index) => `/art/fx/dust-${index}.png`)),
+    loadFrames(['/art/marshal/idle.png', '/art/marshal/cheer-0.png', '/art/marshal/cheer-1.png']),
   ]);
   return {
     poses: { ride: ride!, leanBack: leanBack!, leanForward: leanForward! },
     ragdoll: ragdoll!,
     effects: { explosion: explosion!, dust: dust! },
+    marshal: marshal!,
   };
 }
 
