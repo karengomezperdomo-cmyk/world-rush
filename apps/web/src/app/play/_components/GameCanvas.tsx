@@ -5,7 +5,12 @@ import type { GameAudio, GameHandle } from '@worldrush/game-client';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { hapticCheckpoint, hapticCrash, hapticFinish } from '../../../lib/haptics';
-import { formatCountdown, millisecondsUntilNextRace, todaysMap } from '../../../lib/schedule';
+import {
+  ALL_MAPS_OPEN_FOR_TESTING,
+  formatCountdown,
+  millisecondsUntilNextRace,
+  todaysMap,
+} from '../../../lib/schedule';
 import { readSettings, SETTINGS_CHANGED_EVENT, type Settings } from '../../../lib/settings';
 import { dayKey, readBestTicks, recordRun } from '../../../lib/run-record';
 import { runTimeParts } from '../../../lib/run-time';
@@ -36,17 +41,14 @@ interface FinishSummary {
 }
 
 /**
- * DEV ONLY: `/play?map=5` loads that map instead of today's.
+ * `/play?map=5` loads that map instead of today's.
  *
- * Seven maps open one per day, so on any given day six of them cannot be reached at all — which means six
- * sets of scenery, ramps and difficulty tuning that nobody can look at before they go live. This exists to
- * look at them.
- *
- * Dead in production: `process.env.NODE_ENV` is inlined at build time, so the branch is compiled away
- * entirely rather than merely being guarded at runtime. It must never become a way to play a map out of turn.
+ * Allowed in development always, and in any build while `ALL_MAPS_OPEN_FOR_TESTING` is on — which is the
+ * point of that flag: six of the seven maps are otherwise unreachable on a given day, so they cannot be
+ * played or judged. Turning the flag off restores the daily rotation here and on the menu together.
  */
-function devMapOverride(): MapEntry | undefined {
-  if (process.env.NODE_ENV !== 'development') return undefined;
+function requestedMap(): MapEntry | undefined {
+  if (!ALL_MAPS_OPEN_FOR_TESTING && process.env.NODE_ENV !== 'development') return undefined;
   const requested = Number(new URLSearchParams(window.location.search).get('map'));
   return Number.isInteger(requested) ? mapByNumber(requested) : undefined;
 }
@@ -105,7 +107,7 @@ export function GameCanvas() {
     const parent = stageRef.current;
     if (!parent) return;
 
-    const entry = devMapOverride() ?? todaysMap(new Date());
+    const entry = requestedMap() ?? todaysMap(new Date());
     setMap(entry);
     setBestTicks(readBestTicks(entry.level.id, dayKey(new Date())));
 

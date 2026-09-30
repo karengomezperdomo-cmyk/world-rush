@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ALL_MAPS_OPEN_FOR_TESTING,
   formatCountdown,
   millisecondsUntilNextRace,
   raceDayOfWeek,
@@ -31,8 +32,8 @@ describe('the daily rotation', () => {
     expect(todaysMap(new Date('2026-09-29T00:00:00Z')).number).toBe(2);
   });
 
-  it('closes the days already raced and locks the ones still to come', () => {
-    const week = weekSchedule(new Date('2026-09-30T12:00:00Z')); // Wednesday
+it('closes the days already raced and locks the ones still to come', () => {
+    const week = weekSchedule(new Date('2026-09-30T12:00:00Z'), { allOpen: false }); // Wednesday
     expect(week).toHaveLength(7);
     expect(week.map((day) => day.status)).toEqual([
       'past',
@@ -46,7 +47,29 @@ describe('the daily rotation', () => {
   });
 
   it('locks nothing on the last day of the week', () => {
-    expect(weekSchedule(SUNDAY).filter((day) => day.status === 'locked')).toHaveLength(0);
+    expect(
+      weekSchedule(SUNDAY, { allOpen: false }).filter((day) => day.status === 'locked'),
+    ).toHaveLength(0);
+  });
+
+  it('opens every other map when the testing flag is on, still marking today', () => {
+    const week = weekSchedule(new Date('2026-09-30T12:00:00Z'), { allOpen: true });
+    expect(week.map((day) => day.status)).toEqual([
+      'open',
+      'open',
+      'today',
+      'open',
+      'open',
+      'open',
+      'open',
+    ]);
+    // Nothing is ever locked while the flag is on: that is the whole point of it.
+    expect(week.some((day) => day.status === 'locked')).toBe(false);
+  });
+
+  it('ships with the flag ON, which must be turned off before launch', () => {
+    // A deliberate reminder, not an approval: with this true the daily rotation does not apply.
+    expect(ALL_MAPS_OPEN_FOR_TESTING).toBe(true);
   });
 });
 

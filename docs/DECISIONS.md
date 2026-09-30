@@ -390,6 +390,29 @@ Two things follow, and the second matters more than the first:
    either way, because the measuring environment is the thing that stalls. Real-device frame rate stays
    unverified and belongs to decision **D2**, alongside the deluxe/compat determinism question from §1d.
 
+## 1l. Every map is open (2026-09-29) — TEMPORARY, and it must be turned off before launch
+
+`ALL_MAPS_OPEN_FOR_TESTING` in `apps/web/src/lib/schedule.ts` is **true**. While it is, the daily rotation
+does not apply: the menu shows every map as playable and `/play?map=N` loads any of them, in any build.
+
+Asked for directly by the owner ("dejalo abierto para poder probar todos los mapas"), and it is the right
+call for now — six of the seven maps are unreachable on any given day, so they could not be played, judged or
+playtested at all. It also removes the pressure to settle decision A3 before the game is worth playing.
+
+**The risk it carries, stated plainly:** the daily rotation is the product. With this flag on, "one map per
+day, one leaderboard per map" is not true, and anyone who opens the app can ride the whole week at once. This
+is not a setting to leave on by accident.
+
+Three things keep it from being forgotten:
+
+- It is a single constant. Flipping it to `false` restores the real behaviour on the menu and in `/play`
+  together; there is no second place to remember.
+- `weekSchedule()` takes the flag as an injectable option, so the **real** rotation stays under test while the
+  flag is on. Without that, the shipping behaviour would go unverified for as long as this lasts.
+- `schedule.test.ts` asserts the flag is currently `true`. That is not approval — it is a test that fails the
+  moment someone flips it, forcing a deliberate decision rather than a silent one, and a standing reminder in
+  the suite that the game is not in its shipping configuration.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·

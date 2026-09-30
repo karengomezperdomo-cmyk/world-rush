@@ -50,8 +50,16 @@ function heroSceneFor(mapId: string): string {
 
 function DayTile({ scheduled }: { scheduled: ScheduledMap }) {
   const { map, status } = scheduled;
-  const className = status === 'today' ? 'tile today notch' : status === 'past' ? 'tile closed notch' : 'tile locked notch';
-  const label = status === 'today' ? 'TODAY' : status === 'past' ? 'CLOSED' : 'LOCKED';
+  const className =
+    status === 'today'
+      ? 'tile today notch'
+      : status === 'locked'
+        ? 'tile locked notch'
+        : status === 'past'
+          ? 'tile closed notch'
+          : 'tile notch';
+  const label =
+    status === 'today' ? 'TODAY' : status === 'locked' ? 'LOCKED' : status === 'past' ? 'CLOSED' : 'OPEN';
 
   const tile = (
     <div className={className}>
@@ -72,9 +80,14 @@ function DayTile({ scheduled }: { scheduled: ScheduledMap }) {
     </div>
   );
 
-  if (status !== 'today') return tile;
+  // Today's map needs no query string; the rest carry one only while every map is open for testing.
+  if (status === 'locked' || status === 'past') return tile;
   return (
-    <Link className="tile-link" href="/play" aria-label={`Play map ${map.number}, ${map.name}`}>
+    <Link
+      className="tile-link"
+      href={status === 'today' ? '/play' : `/play?map=${map.number}`}
+      aria-label={`Play map ${map.number}, ${map.name}`}
+    >
       {tile}
     </Link>
   );

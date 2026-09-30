@@ -20,7 +20,20 @@ import { MAPS, type MapEntry } from '@worldrush/game-core';
 /** The hour (UTC) at which the day's map changes. Provisional — see A3. */
 export const DAILY_CUT_OVER_HOUR_UTC = 0;
 
-export type DayStatus = 'past' | 'today' | 'locked';
+/**
+ * TEMPORARY: every map is open, instead of one per day.
+ *
+ * The daily rotation is the whole point of the game and this switch turns it off, so it is a single constant
+ * and nothing else — flipping it back to `false` restores the real behaviour everywhere at once. It is on
+ * because decision A3 (the cut-over hour and the start date of week 1) is still open, and because six of the
+ * seven maps are otherwise unreachable on any given day, which makes them impossible to playtest.
+ *
+ * **This must be false before launch.** With it true, a player can ride every map whenever they like, and
+ * "one map per day, one leaderboard per map" stops being true.
+ */
+export const ALL_MAPS_OPEN_FOR_TESTING = true;
+
+export type DayStatus = 'past' | 'today' | 'locked' | 'open';
 
 export interface ScheduledMap {
   readonly map: MapEntry;
@@ -46,12 +59,28 @@ export function todaysMap(now: Date): MapEntry {
   return map;
 }
 
-/** All seven maps with the day's map marked, earlier days closed and later days still locked. */
-export function weekSchedule(now: Date): ScheduledMap[] {
+/**
+ * All seven maps with the day's map marked, earlier days closed and later days still locked — unless every
+ * map is open, in which case the rest are simply playable.
+ *
+ * `allOpen` defaults to the flag and exists so both behaviours stay under test: the real daily rotation is
+ * what ships, and it would otherwise go unverified for as long as the flag is on.
+ */
+export function weekSchedule(
+  now: Date,
+  { allOpen = ALL_MAPS_OPEN_FOR_TESTING }: { allOpen?: boolean } = {},
+): ScheduledMap[] {
   const today = raceDayOfWeek(now);
   return MAPS.map((map) => ({
     map,
-    status: map.number < today ? 'past' : map.number === today ? 'today' : 'locked',
+    status:
+      map.number === today
+        ? 'today'
+        : allOpen
+          ? 'open'
+          : map.number < today
+            ? 'past'
+            : 'locked',
   }));
 }
 

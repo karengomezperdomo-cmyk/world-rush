@@ -87,6 +87,9 @@ const GROUNDED_TOLERANCE_METRES = 0.95;
 const DUST_INTERVAL_MS = 85;
 /** Below this speed the wheel is not biting hard enough to throw anything up. */
 const DUST_MIN_SPEED = 3.5;
+/** How long the camera keeps shaking after an impact, and how far it throws the view at its worst. */
+const SHAKE_MS = 420;
+const SHAKE_PIXELS = 13;
 
 const POSES = ['ride', 'leanBack', 'leanForward'] as const;
 type Pose = (typeof POSES)[number];
@@ -159,6 +162,7 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
   world.addChild(effects.container);
   let wasCrashed = false;
   let dustDueInMs = 0;
+  let shakeLeftMs = 0;
 
   const input: InputTracker = createInputTracker();
 
@@ -194,9 +198,19 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
     bike.position.set(state.x * PIXELS_PER_METRE, -state.y * PIXELS_PER_METRE);
     bike.rotation = -state.angle;
 
+    let shakeX = 0;
+    let shakeY = 0;
+    if (shakeLeftMs > 0) {
+      shakeLeftMs = Math.max(0, shakeLeftMs - app.ticker.deltaMS);
+      // Decays as it goes, so the hit lands hard and settles instead of rattling at a constant amplitude.
+      const strength = (shakeLeftMs / SHAKE_MS) ** 2 * SHAKE_PIXELS;
+      shakeX = (Math.random() * 2 - 1) * strength;
+      shakeY = (Math.random() * 2 - 1) * strength;
+    }
+
     world.position.set(
-      app.screen.width * CAMERA_ANCHOR_X - state.x * PIXELS_PER_METRE,
-      app.screen.height * CAMERA_ANCHOR_Y + state.y * PIXELS_PER_METRE,
+      app.screen.width * CAMERA_ANCHOR_X - state.x * PIXELS_PER_METRE + shakeX,
+      app.screen.height * CAMERA_ANCHOR_Y + state.y * PIXELS_PER_METRE + shakeY,
     );
   }
 
@@ -205,7 +219,20 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
     const wheelY = -(state.y - 0.35) * PIXELS_PER_METRE;
 
     if (state.crashed && !wasCrashed) {
-      effects.explosion(state.x * PIXELS_PER_METRE, -state.y * PIXELS_PER_METRE, ART_SCALE);
+      const crashX = state.x * PIXELS_PER_METRE;
+      const crashY = -state.y * PIXELS_PER_METRE;
+      effects.explosion(crashX, crashY, ART_SCALE);
+      // Debris thrown out sideways, so the impact scatters rather than just flashing in place.
+      for (let piece = 0; piece < 5; piece++) {
+        const spread = (piece / 4 - 0.5) * 2;
+        effects.dust(
+          crashX + spread * 0.5 * PIXELS_PER_METRE,
+          crashY,
+          spread * 2.6,
+          ART_SCALE * (0.7 + Math.abs(spread) * 0.4),
+        );
+      }
+      shakeLeftMs = SHAKE_MS;
     }
     // Respawn: clear the wreckage rather than leave a puff hanging where the bike used to be.
     if (wasCrashed && !state.crashed) effects.clear();
@@ -241,6 +268,7 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
     restart() {
       effects.clear();
       wasCrashed = false;
+      shakeLeftMs = 0;
       simulation.dispose();
       simulation = createBikeSimulation(engine, level);
       accumulatorMs = 0;
@@ -298,18 +326,49 @@ function drawLevel(level: Level, theme: MapTheme): Container {
         .fill(isRamp ? theme.rampEdge : theme.surface);
 
       if (isRamp) {
-        // Planks across the ramp, so a takeoff reads as a structure and the rider can see it coming.
+        // A takeoff is a built thing, so it is drawn as one: legs standing on the ground beneath it,
+        // diagonal bracing between them, planks across the deck, and a lit lip at the very top. The rider
+        // has to read "jump here" at speed, and a plain coloured wedge does not say that.
         const lengthPixels = Math.hypot(bx - ax, by - ay);
-        const planks = Math.max(1, Math.floor(lengthPixels / (0.9 * PIXELS_PER_METRE)));
+        const legs = Math.max(2, Math.round(lengthPixels / (2.2 * PIXELS_PER_METRE)));
+        let previousLegX = ax;
+        let previousLegY = ay + band;
+        for (let leg = 1; leg <= legs; leg++) {
+          const t = leg / legs;
+          const px = ax + (bx - ax) * t;
+          const py = ay + (by - ay) * t + band;
+          // Upright, from the deck down to the shared floor.
+          surface.moveTo(px, py).lineTo(px, floor).stroke({ width: 3, color: theme.ground, alpha: 0.85 });
+          // Brace, running back to the foot of the previous upright.
+          surface
+            .moveTo(previousLegX, previousLegY)
+            .lineTo(px, Math.min(floor, py + 2.2 * PIXELS_PER_METRE))
+            .stroke({ width: 2, color: theme.ground, alpha: 0.5 });
+          previousLegX = px;
+          previousLegY = py;
+        }
+
+        const planks = Math.max(2, Math.floor(lengthPixels / (0.75 * PIXELS_PER_METRE)));
         for (let plank = 1; plank < planks; plank++) {
           const t = plank / planks;
           const px = ax + (bx - ax) * t;
           const py = ay + (by - ay) * t;
+          // Alternating tone, so the deck reads as separate boards rather than as one hatched block.
           surface
-            .moveTo(px, py + band)
-            .lineTo(px, py + band + 0.55 * PIXELS_PER_METRE)
-            .stroke({ width: 2, color: theme.ground, alpha: 0.55 });
+            .moveTo(px, py)
+            .lineTo(px, py + band)
+            .stroke({
+              width: 2,
+              color: plank % 2 === 0 ? theme.ground : theme.rampEdge,
+              alpha: plank % 2 === 0 ? 0.45 : 0.28,
+            });
         }
+
+        // The lip: a short bright kick at the very end of the ramp, where the wheels leave.
+        surface
+          .moveTo(bx - 0.5 * PIXELS_PER_METRE, by - 0.12 * PIXELS_PER_METRE)
+          .lineTo(bx, by - 0.3 * PIXELS_PER_METRE)
+          .stroke({ width: 4, color: theme.rampEdge });
       }
     }
   }
