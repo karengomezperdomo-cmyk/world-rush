@@ -26,11 +26,16 @@ import { CrashToast, FinishOverlay, PauseOverlay } from './RunOverlays';
  * submitted time, not anything measured against a wall clock.
  */
 
+/**
+ * The pads show PICTURES of what they do — a fuel can, a brake disc, and the bike itself tilted the way the
+ * pad tilts it — rather than the generic stroke symbols they started with (two chevrons, a filled square,
+ * circular arrows), which said nothing about a motorbike.
+ */
 const PADS = [
-  { flag: INPUT.LEAN_BACK, label: 'LEAN BACK', icon: 'lean-back', className: 'lean p-back' },
-  { flag: INPUT.LEAN_FORWARD, label: 'LEAN FWD', icon: 'lean-fwd', className: 'lean p-fwd' },
-  { flag: INPUT.BRAKE, label: 'BRAKE', icon: 'brake', className: 'brake p-brake' },
-  { flag: INPUT.GAS, label: 'GAS', icon: 'gas', className: 'gas p-gas' },
+  { flag: INPUT.LEAN_BACK, label: 'LEAN BACK', art: 'lean-back', className: 'lean p-back' },
+  { flag: INPUT.LEAN_FORWARD, label: 'LEAN FWD', art: 'lean-forward', className: 'lean p-fwd' },
+  { flag: INPUT.BRAKE, label: 'BRAKE', art: 'brake', className: 'brake p-brake' },
+  { flag: INPUT.GAS, label: 'GAS', art: 'gas', className: 'gas p-gas' },
 ] as const;
 
 interface FinishSummary {
@@ -344,7 +349,8 @@ function PadButton({
         padRefs.current[index] = element;
       }}
     >
-      <Icon name={pad.icon} className="i" />
+      {/* eslint-disable-next-line @next/next/no-img-element -- pixel art, must not be resampled */}
+      <img className="pad-art pix" src={`/art/controls/${pad.art}.png`} alt="" />
       <span>{pad.label}</span>
     </button>
   );

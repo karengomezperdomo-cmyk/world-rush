@@ -343,3 +343,44 @@ body {
   padding: 0;
   cursor: pointer;
 }
+
+/* The local sign-in that skips World App. Deliberately plain and unbranded: it only exists in development,
+   and it should never be mistaken for a real way in. */
+.auth-box .dev-login {
+  margin-top: 10px;
+  background: transparent;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  padding: 8px 14px;
+  font: 400 12px var(--font-ui);
+  cursor: pointer;
+}
+
+.auth-box .dev-login-note {
+  max-width: 280px;
+  margin: 6px auto 0;
+  font: 400 11px/1.4 var(--font-ui);
+  color: var(--faint);
+}
+
+/* Control-pad icons are pixel art now, not SVG. `game.css` sizes `.pad svg`; these need their own rule, and
+   must never be smoothed by the browser's default image scaling. */
+.game-screen .pad .pad-art {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+/* The gas pad is the biggest of the four, so its icon gets to be bigger too. */
+.game-screen .pad.gas .pad-art {
+  width: 46px;
+  height: 46px;
+}
+
+/* The lean icons are the rotated bike, which is wider than it is tall, so `contain` shrinks them to fit a
+   square box and they end up smaller than the other two. Give them the width they need. */
+.game-screen .pad.lean .pad-art {
+  width: 50px;
+  height: 44px;
+}

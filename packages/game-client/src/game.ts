@@ -83,8 +83,25 @@ const RAGDOLL_FRAME_MS = 90;
  * glitch rather than as a wheel biting.
  */
 const GROUNDED_TOLERANCE_METRES = 0.95;
-/** How long each frame of the marshal's wave holds. */
-const MARSHAL_WAVE_MS = 190;
+/**
+ * The checkpoint marshal's animation, supplied as HD frames in `public/art/marshal-hd/`.
+ *
+ * 160x264 RGBA frames at 12 fps: idle loops while she waits, activate plays ONCE as the rider crosses, then
+ * loop runs forever with the hearts coming off her hands. Her pivot is the centre of her feet at (80, 263),
+ * and the empty space above her is deliberate — it is where the hearts rise into.
+ */
+const MARSHAL_FPS = 12;
+const MARSHAL_FRAME_MS = 1000 / MARSHAL_FPS;
+const MARSHAL_HD_FRAMES = { idle: 8, activate: 14, loop: 24 } as const;
+/** Anchor at the pivot the art was drawn around: centre of the feet, on the bottom edge. */
+const MARSHAL_HD_ANCHOR = { x: 80 / 160, y: 263 / 264 } as const;
+/**
+ * Her body fills about 203 px of the 264-px frame; the rest is headroom for the hearts. Scaling by the FRAME
+ * height would therefore draw her noticeably smaller than the sprite she replaces, so the scale is derived
+ * from the BODY height instead, against the 46-art-pixel marshal that came before.
+ */
+const MARSHAL_HD_BODY_PIXELS = 203;
+const MARSHAL_ART_PIXELS_TALL = 46;
 /** Dust is thrown at most this often; any faster and it is a solid smear rather than puffs. */
 const DUST_INTERVAL_MS = 85;
 /** Below this speed the wheel is not biting hard enough to throw anything up. */
@@ -154,7 +171,7 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
 
   const world = new Container();
   app.stage.addChild(world);
-  const levelView = drawLevel(level, theme, textures.marshal[0]!);
+  const levelView = drawLevel(level, theme, textures.marshal.idle[0]!);
   world.addChild(levelView.container);
 
   const bike = createBikeSprite(textures.poses.ride[0]!);
@@ -217,6 +234,45 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
     );
   }
 
+  /**
+   * Advances each checkpoint marshal: idle until the rider reaches her, then activate ONCE, then loop.
+   *
+   * Driven by elapsed milliseconds rather than by counting rendered frames, so she animates at her authored
+   * 12 fps whatever rate the game happens to be drawing at. Crossing back below a checkpoint — which happens
+   * on a restart — returns her to idle, so a new run does not start with everyone already celebrating.
+   */
+  function updateMarshals(state: BikeState, deltaMs: number): void {
+    for (let index = 0; index < levelView.marshals.length; index++) {
+      const marshal = levelView.marshals[index]!;
+      const passed = index <= state.checkpointIndex;
+
+      if (passed && marshal.phase === 'idle') {
+        marshal.phase = 'activate';
+        marshal.frame = 0;
+        marshal.elapsedMs = 0;
+      } else if (!passed && marshal.phase !== 'idle') {
+        marshal.phase = 'idle';
+        marshal.frame = 0;
+        marshal.elapsedMs = 0;
+      }
+
+      marshal.elapsedMs += deltaMs;
+      while (marshal.elapsedMs >= MARSHAL_FRAME_MS) {
+        marshal.elapsedMs -= MARSHAL_FRAME_MS;
+        marshal.frame += 1;
+        const length = textures.marshal[marshal.phase].length;
+        if (marshal.frame >= length) {
+          // Activate is the only one that does not repeat: it hands over to the loop and never runs again.
+          if (marshal.phase === 'activate') marshal.phase = 'loop';
+          marshal.frame = 0;
+        }
+      }
+
+      const frames = textures.marshal[marshal.phase];
+      marshal.sprite.texture = frames[Math.min(marshal.frame, frames.length - 1)]!;
+    }
+  }
+
   function updateEffects(state: BikeState, held: InputMask, deltaMs: number): void {
     const rearX = (state.x - 0.55) * PIXELS_PER_METRE;
     const wheelY = -(state.y - 0.35) * PIXELS_PER_METRE;
@@ -252,12 +308,7 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
       effects.dust(rearX, wheelY, -Math.sign(state.vx) * 1.6, ART_SCALE);
     }
 
-    // Every marshal the rider has already passed throws her arms up and waves; the rest wait, arms down.
-    const wave = 1 + (Math.floor(performance.now() / MARSHAL_WAVE_MS) % 2);
-    for (let index = 0; index < levelView.marshals.length; index++) {
-      const passed = index <= state.checkpointIndex;
-      levelView.marshals[index]!.texture = textures.marshal[passed ? wave : 0]!;
-    }
+    updateMarshals(state, deltaMs);
 
     effects.update(deltaMs);
   }
@@ -298,13 +349,22 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
 }
 
 /** Ground, checkpoints and finish line. Static: drawn once, moved by the camera. */
+type MarshalPhase = 'idle' | 'activate' | 'loop';
+
+interface MarshalAnimation {
+  readonly sprite: Sprite;
+  phase: MarshalPhase;
+  frame: number;
+  elapsedMs: number;
+}
+
 interface LevelView {
   readonly container: Container;
   /** One per checkpoint, in order, so index N is checkpoint N. */
-  readonly marshals: Sprite[];
+  readonly marshals: MarshalAnimation[];
 }
 
-function drawLevel(level: Level, theme: MapTheme, marshalTexture: Texture): LevelView {
+function drawLevel(level: Level, theme: MapTheme, marshalIdle: Texture): LevelView {
   const container = new Container();
   const toScreen = ([x, y]: readonly [number, number]): [number, number] => [
     x * PIXELS_PER_METRE,
@@ -401,14 +461,15 @@ function drawLevel(level: Level, theme: MapTheme, marshalTexture: Texture): Leve
 
   // The marshal stands at each checkpoint, on the ground rather than at a fixed height, so she is planted on
   // the surface whatever the terrain does there. Anchored at her feet for the same reason.
-  const marshals = level.checkpoints.map((checkpointX) => {
-    const sprite = new Sprite(marshalTexture);
-    sprite.anchor.set(0.5, 1);
-    sprite.scale.set(ART_SCALE);
+  const marshalScale = (MARSHAL_ART_PIXELS_TALL * ART_SCALE) / MARSHAL_HD_BODY_PIXELS;
+  const marshals = level.checkpoints.map((checkpointX): MarshalAnimation => {
+    const sprite = new Sprite(marshalIdle);
+    sprite.anchor.set(MARSHAL_HD_ANCHOR.x, MARSHAL_HD_ANCHOR.y);
+    sprite.scale.set(marshalScale);
     const groundY = groundYAt(level, checkpointX) ?? level.start.y;
     sprite.position.set(checkpointX * PIXELS_PER_METRE, -groundY * PIXELS_PER_METRE);
     container.addChild(sprite);
-    return sprite;
+    return { sprite, phase: 'idle', frame: 0, elapsedMs: 0 };
   });
 
   return { container, marshals };
@@ -419,8 +480,12 @@ interface BikeTextures {
   readonly poses: Record<Pose, Texture[]>;
   readonly ragdoll: Texture[];
   readonly effects: EffectTextures;
-  /** [arms down, arms up 0, arms up 1] — the checkpoint marshal. */
-  readonly marshal: Texture[];
+  /** The checkpoint marshal's three animations, each already in frame order. */
+  readonly marshal: {
+    readonly idle: Texture[];
+    readonly activate: Texture[];
+    readonly loop: Texture[];
+  };
 }
 
 async function loadPixelTexture(url: string): Promise<Texture> {
@@ -435,22 +500,42 @@ async function loadFrames(urls: readonly string[]): Promise<Texture[]> {
   return Promise.all(urls.map(loadPixelTexture));
 }
 
+/**
+ * The marshal's frames, left on Pixi's default LINEAR filtering rather than forced to 'nearest' like every
+ * other texture here.
+ *
+ * The rest of the art is low-resolution pixel art drawn at 1:1 or larger, where nearest-neighbour is the only
+ * correct choice. These frames are the opposite case: they are high resolution and get scaled DOWN to about a
+ * third, and nearest-neighbour downscaling throws away two pixels in three, which turns smooth artwork into
+ * crawling noise as she animates.
+ */
+async function loadSmoothFrames(animation: string, count: number): Promise<Texture[]> {
+  return Promise.all(
+    Array.from({ length: count }, (_, index) =>
+      Assets.load<Texture>(`/art/marshal-hd/${animation}-${index}.png`),
+    ),
+  );
+}
+
 async function loadBikeTextures(): Promise<BikeTextures> {
   const frameIndices = Array.from({ length: SPIN_FRAME_COUNT }, (_, index) => index);
-  const [ride, leanBack, leanForward, ragdoll, explosion, dust, marshal] = await Promise.all([
+  const [ride, leanBack, leanForward, ragdoll, explosion, dust, marshalIdle, marshalActivate, marshalLoop] =
+    await Promise.all([
     ...POSES.map((pose) =>
       loadFrames(frameIndices.map((frame) => `/art/bike/${POSE_FILES[pose]}-${frame}.png`)),
     ),
     loadFrames(frameIndices.map((frame) => `/art/bike/ragdoll-${frame}.png`)),
     loadFrames(Array.from({ length: 6 }, (_, index) => `/art/fx/explosion-${index}.png`)),
     loadFrames(Array.from({ length: 4 }, (_, index) => `/art/fx/dust-${index}.png`)),
-    loadFrames(['/art/marshal/idle.png', '/art/marshal/cheer-0.png', '/art/marshal/cheer-1.png']),
+    loadSmoothFrames('idle', MARSHAL_HD_FRAMES.idle),
+    loadSmoothFrames('activate', MARSHAL_HD_FRAMES.activate),
+    loadSmoothFrames('loop', MARSHAL_HD_FRAMES.loop),
   ]);
   return {
     poses: { ride: ride!, leanBack: leanBack!, leanForward: leanForward! },
     ragdoll: ragdoll!,
     effects: { explosion: explosion!, dust: dust! },
-    marshal: marshal!,
+    marshal: { idle: marshalIdle!, activate: marshalActivate!, loop: marshalLoop! },
   };
 }
 

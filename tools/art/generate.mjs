@@ -7,6 +7,7 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { AVATAR_COUNT, avatar } from './avatars.mjs';
 import { bikeSprite, riderRagdoll } from './bike.mjs';
+import { brakeDisc, fuelCan, leanIcon } from './controls.mjs';
 import { gameplayFrame, heroScene } from './canyon.mjs';
 import { dustFrame, explosionFrame } from './fx.mjs';
 import { HERO_SCENES } from './heroes.mjs';
@@ -49,6 +50,11 @@ for (const [path, draw] of HERO_SCENES) emit(path, draw());
 emit('scenes/gameplay-canyon.png', gameplayFrame({ groundAt: 0.62 }));
 emit('scenes/gameplay-canyon-crash.png', gameplayFrame({ crash: true, groundAt: 0.62 }));
 emit('scenes/gameplay-canyon-window.png', gameplayFrame({ height: 146 }));
+// Control-pad icons: the thing each pad does, rather than a generic symbol.
+emit('controls/gas.png', fuelCan());
+emit('controls/brake.png', brakeDisc());
+emit('controls/lean-back.png', leanIcon('back'));
+emit('controls/lean-forward.png', leanIcon('forward'));
 emit('logo/rush7.png', logo());
 // The checkpoint marshal: arms down until the rider takes the checkpoint, then both arms up, waving.
 emit('marshal/idle.png', marshal({ cheer: false }));

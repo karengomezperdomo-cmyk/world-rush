@@ -32,9 +32,15 @@ const FILES = [
   ...Array.from({ length: 6 }, (_, index) => `fx/explosion-${index}.png`),
   ...Array.from({ length: 4 }, (_, index) => `fx/dust-${index}.png`),
   // The checkpoint marshal: she replaces the plain line that used to mark a checkpoint.
-  'marshal/idle.png',
-  'marshal/cheer-0.png',
-  'marshal/cheer-1.png',
+  // Control-pad icons.
+  'controls/gas.png',
+  'controls/brake.png',
+  'controls/lean-back.png',
+  'controls/lean-forward.png',
+  // The HD checkpoint animation: idle (8) -> activate (14, once) -> loop (24). 160x264 RGBA each.
+  ...Array.from({ length: 8 }, (_, index) => `marshal-hd/idle-${index}.png`),
+  ...Array.from({ length: 14 }, (_, index) => `marshal-hd/activate-${index}.png`),
+  ...Array.from({ length: 24 }, (_, index) => `marshal-hd/loop-${index}.png`),
   // The Home screen's week grid, header and hero.
   'logo/rush7.png',
   ...['sunset-canyon','coral-coast','emerald-woods','steel-yard','magma-ridge','frost-peak','orbit-circuit'].map(
