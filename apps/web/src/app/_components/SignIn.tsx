@@ -11,6 +11,19 @@ import { useCallback, useEffect, useState } from 'react';
 
 const WORLD_ID_ACTION = 'verify-human';
 
+/**
+ * Whether to offer the local sign-in that skips World App entirely.
+ *
+ * Gated on the SAME condition the server enforces: `/api/dev/fake-login` calls `assertDevelopmentOnly`
+ * against `APP_ENV`, so checking the public mirror of that variable means the button only ever appears where
+ * it would actually work. Using `NODE_ENV` instead would show it in a local production build, where the
+ * route refuses and the button would simply look broken.
+ *
+ * MiniKit only exists inside World App, so without this there is no way to reach the game — the menu, the
+ * maps, the settings — on a desktop browser at all.
+ */
+const DEV_LOGIN_AVAILABLE = process.env.NEXT_PUBLIC_APP_ENV === 'development';
+
 interface SessionState {
   authenticated: boolean;
   userId?: string;
@@ -69,6 +82,25 @@ export function SignIn({
     }
   }, [refreshSession]);
 
+  /** Local-only: mints a throwaway session, no wallet and no World ID. */
+  const devSignIn = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/dev/fake-login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      });
+      if (!response.ok) throw new Error('The local sign-in harness is not available.');
+      await refreshSession();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Local sign-in failed.');
+    } finally {
+      setBusy(false);
+    }
+  }, [refreshSession]);
+
   const signOut = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setSession({ authenticated: false });
@@ -98,6 +130,21 @@ export function SignIn({
         <button type="button" onClick={() => void signIn()} disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in with World App'}
         </button>
+        {DEV_LOGIN_AVAILABLE && (
+          <>
+            <button
+              className="dev-login"
+              type="button"
+              onClick={() => void devSignIn()}
+              disabled={busy}
+            >
+              {busy ? 'Opening…' : 'Skip World App (local only)'}
+            </button>
+            <p className="dev-login-note">
+              Development build. Mints a throwaway session so the game can be played without World App.
+            </p>
+          </>
+        )}
         {error && <p role="alert">{error}</p>}
       </div>
     );
