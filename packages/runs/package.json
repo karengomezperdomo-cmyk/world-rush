@@ -1,0 +1,19 @@
+{
+  "name": "@worldrush/runs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@worldrush/db": "workspace:*",
+    "@worldrush/game-core": "workspace:*",
+    "@worldrush/shared": "workspace:*",
+    "box2d3-wasm": "5.2.0",
+    "zod": "^4.6.5"
+  }
+}

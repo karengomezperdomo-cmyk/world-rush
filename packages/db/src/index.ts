@@ -14,4 +14,4 @@ export * from './schema';
  * stopped compiling with "separate declarations of a private property". Funnelling the ORM through one
  * package keeps exactly one copy in every consumer's type graph, whatever drivers get added later.
  */
-export { and, eq, gt, isNull, sql } from 'drizzle-orm';
+export { and, asc, desc, eq, gt, inArray, isNull, lt, lte, sql } from 'drizzle-orm';

@@ -223,6 +223,9 @@ importers:
       '@worldrush/game-core':
         specifier: workspace:*
         version: link:../../packages/game-core
+      '@worldrush/runs':
+        specifier: workspace:*
+        version: link:../../packages/runs
       '@worldrush/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -310,6 +313,24 @@ importers:
       box2d3-wasm:
         specifier: 5.2.0
         version: 5.2.0
+
+  packages/runs:
+    dependencies:
+      '@worldrush/db':
+        specifier: workspace:*
+        version: link:../db
+      '@worldrush/game-core':
+        specifier: workspace:*
+        version: link:../game-core
+      '@worldrush/shared':
+        specifier: workspace:*
+        version: link:../shared
+      box2d3-wasm:
+        specifier: 5.2.0
+        version: 5.2.0
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
 
   packages/shared: {}
 
