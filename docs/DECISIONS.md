@@ -413,6 +413,40 @@ Three things keep it from being forgotten:
   moment someone flips it, forcing a deliberate decision rather than a silent one, and a standing reminder in
   the suite that the game is not in its shipping configuration.
 
+## 1m. D2a answered (2026-10-01): the two Box2D binaries agree, bit for bit
+
+The biggest open risk in the project is closed, favourably.
+
+`box2d3-wasm` ships two separately compiled binaries — a SIMD "deluxe" one Node loads and a "compat" one the
+browser is pinned to (§1d) — and nothing in the package promises they agree. Phase 7's anti-cheat is entirely
+built on them agreeing: the player submits their inputs, the server re-simulates, and the time is accepted
+only if both arrive at the same answer. A mismatch would not break the game, it would break the
+*verification*, invisibly, and only after replays had been collected.
+
+**Measured, not assumed.** The same fixed 1800-tick input sequence — throttle, both leans, braking, through a
+crash and a respawn — was run in Node and in the browser, and every sampled value matched **bit for bit**:
+position, height, angle and velocity at six checkpoints, plus the final state. Not "within a tolerance";
+identical IEEE-754 values.
+
+| tick | Node (deluxe) x    | browser (compat) x |
+| ---- | ------------------ | ------------------ |
+| 300  | 31.025005340576172 | 31.025005340576172 |
+| 900  | 12.857233047485352 | 12.857233047485352 |
+| 1800 | 103.31587982177734 | 103.31587982177734 |
+
+Two things now protect this:
+
+- `packages/game-core/src/determinism.test.ts` pins those exact values. It is a fingerprint, not a
+  meaningful measurement: any dependency bump, Box2D rebuild or physics tweak that shifts the simulation by
+  one bit fails the test. For a deliberate tuning change the values get updated on purpose; for a dependency
+  bump it is a warning that every stored replay just became unverifiable.
+- `apps/web/src/app/dev/determinism` runs the browser half of the comparison on demand, so the pairing can be
+  re-checked by hand after any upgrade.
+
+**What this does NOT prove:** both runs were on x86. A phone is ARM. WebAssembly specifies strict IEEE-754
+semantics precisely so that results do not vary by architecture, which makes this strong evidence rather than
+proof — but the honest position is that the phone has not been checked, and that is logged as D2b2.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·
@@ -468,17 +502,36 @@ Deliverables are in `design/` (open `design/index.html`; every screen is also re
 | The "human" pill is a **placeholder** (leaderboard, profile, Home)                           | World's review guidelines want their official badge next to usernames; the official asset replaces the pill, unmodified.                                              |
 | The weekly-results screen fixes layout only                                                  | The champion rule (A5) is not decided and is not invented; the mock carries a visible design note.                                                                   |
 
+## 5a. Owner decisions ANSWERED (2026-10-01)
+
+| ID      | Answer                                                                                                   |
+| ------- | -------------------------------------------------------------------------------------------------------- |
+| **A3**  | Cut-over is in **UTC**, confirming the midnight-UTC default already in `lib/schedule.ts`. The start date of week 1 is still outstanding, so the Home header still shows a date range rather than "WEEK 1" |
+| **H1a** | **Hobby**, with its two limits accepted: Vercel's Hobby tier is for non-commercial use, and cron runs at most once a day. Revisit the moment this app earns money |
+| **H1b** | **No custom domain.** `world-rush.vercel.app` is the address |
+| **H2**  | Resolved in practice: the private repository exists and is pushed to                                      |
+| **F1a** | Resolved in practice: the hosted Neon database is provisioned and in use                                  |
+| **A5**  | **Lowest total time wins**: the seven daily times are added up and the smallest sum is champion. Chosen for simplicity over the points and best-5-of-7 alternatives |
+| **A3b** | Week 1 starts on **the first Monday after launch**. No date is fixed yet, so the Home header keeps showing a date range instead of a week number until there is one |
+
+### A5 leaves one sub-question, and it is not being invented
+
+Adding seven times only produces a ranking for players who have seven times. What happens to someone who
+misses a day is a real rule with real consequences — it is the difference between a leaderboard almost
+nobody qualifies for and one that tolerates a missed Tuesday — and the owner has not been asked it yet.
+
+It does not block anything today: the weekly screen belongs to Phase 7 and does not exist. It must be
+settled before that screen is built, and the obvious default (rank only players with all seven times,
+show everyone else as unranked) is written here as a *suggestion*, not as a decision taken.
+
 ## 5. PENDING owner decisions
 
 | ID      | Decision needed                                                                                                                | Needed by         |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
-| **D2**  | Test devices with World App: iPhone, Android or both (MiniKit only works inside World App). Phase 5 raised the stakes: `box2d3-wasm` ships two different binaries and Node/browser pick different ones (§1d) | Phase 2           |
-| **A3**  | Official daily cut-over hour (UTC 00:00 recommended) and the start date of Week 1                                              | Phase 8           |
+| **D2b2** | Re-run the determinism comparison on a real phone once there is one to hand. See §1m: the desktop result is strong but ARM is not x86 | before launch |
+| **D2b** | **World ID human verification on a real device.** Previously failed; the owner expects the current MiniKit to fix it, which is not the same as having seen it work. The temporary diagnostic in `packages/auth/src/world-id.ts` stays until a real verify response is captured | before launch     |
+| **A3b** | **Start date of week 1.** Needed before the Home screen can say "WEEK 1" instead of a date range                               | Phase 8           |
 | **A5**  | Weekly champion formula (options in `docs/phase-0/04-decisions-and-questions.md`; not chosen on the owner's behalf)            | before showing it |
-| **H1a** | Vercel plan (Hobby vs Pro): Hobby is non-commercial and has daily-only cron                                                    | Phase 2           |
-| **H1b** | Custom domain (a `*.vercel.app` URL works for testing)                                                                         | Phase 12–13       |
-| **H2**  | GitHub repository: create a private one (the `gh` CLI is installed), yes/no. Nothing is created without permission            | Phase 2           |
-| **F1a** | Permission to provision the hosted Neon database through Vercel (may bill); not needed until a deployment needs persistence   | Phase 2–3         |
 
 ## 6. World items still to verify (unchanged)
 

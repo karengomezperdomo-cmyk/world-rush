@@ -384,3 +384,12 @@ body {
   width: 50px;
   height: 44px;
 }
+
+/* The control chips on the How to play screen reuse the pads' pixel-art icons, so they need the same
+   no-smoothing treatment and a size that suits a chip rather than a thumb-sized button. */
+.screen .ctl .ctl-art {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
