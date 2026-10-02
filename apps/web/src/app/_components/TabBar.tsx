@@ -20,7 +20,7 @@ const TABS: readonly {
   readonly note?: string;
 }[] = [
   { id: 'home', label: 'HOME', icon: 'home', href: '/' },
-  { id: 'leaderboard', label: 'LEADERBOARD', icon: 'trophy', note: 'Coming in Phase 7' },
+  { id: 'leaderboard', label: 'LEADERBOARD', icon: 'trophy', href: '/leaderboard' },
   { id: 'how', label: 'HOW TO PLAY', icon: 'help', href: '/how-to-play' },
   { id: 'settings', label: 'SETTINGS', icon: 'gear', href: '/settings' },
 ];

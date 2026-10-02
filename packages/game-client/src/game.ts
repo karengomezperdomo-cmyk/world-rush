@@ -1,6 +1,7 @@
 import {
   createBikeSimulation,
   groundYAt,
+  ReplayRecorder,
   hasInput,
   INPUT,
   TICK_SECONDS,
@@ -133,6 +134,12 @@ export interface GameHandle {
   resume(): void;
   /** Throws the current run away and starts the same level again from tick zero. */
   restart(): void;
+  /**
+   * The inputs pressed so far, encoded for submission, or null when this game is not recording.
+   *
+   * Safe to call at any point; the usual moment is as soon as the state reports `finished`.
+   */
+  getReplay(): Uint8Array | null;
   destroy(): void;
 }
 
@@ -142,12 +149,32 @@ export interface StartGameOptions {
   level: Level;
   /** Called after every simulation tick, for HUD updates. */
   onState?: (state: BikeState) => void;
+  /**
+   * Record the inputs so the run can be submitted for verification.
+   *
+   * Off by default: a practice run nobody is going to submit should not pay for the bookkeeping, and the
+   * caller is the one who knows whether this run counts.
+   */
+  record?: boolean;
 }
 
-export async function startGame({ parent, level, onState }: StartGameOptions): Promise<GameHandle> {
+export async function startGame({
+  parent,
+  level,
+  onState,
+  record = false,
+}: StartGameOptions): Promise<GameHandle> {
   const engine = await loadPhysicsEngine();
   // Reassigned by restart(), which throws the old world away rather than trying to rewind it.
   let simulation = createBikeSimulation(engine, level);
+  /**
+   * Fed from the SIMULATION loop below, one entry per step — never from the render loop.
+   *
+   * The two run at different rates: a slow frame steps the simulation several times, and a fast one may step
+   * it none. A replay with anything other than exactly one entry per tick does not reproduce the run, and a
+   * run that does not reproduce is a run the server will reject.
+   */
+  let recorder = record ? new ReplayRecorder(level.id) : null;
 
   const theme = themeFor(level.id);
   const app = new Application();
@@ -204,7 +231,10 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
     let heldInput: InputMask = 0;
     if (ticks > 0) {
       heldInput = input.getMask();
-      for (let i = 0; i < ticks; i++) simulation.step(heldInput);
+      for (let i = 0; i < ticks; i++) {
+        recorder?.record(heldInput);
+        simulation.step(heldInput);
+      }
       onState?.(simulation.getState());
     }
 
@@ -326,7 +356,12 @@ export async function startGame({ parent, level, onState }: StartGameOptions): P
       paused = false;
       accumulatorMs = 0;
     },
+    getReplay() {
+      return recorder ? recorder.encode() : null;
+    },
     restart() {
+      // A new run needs a new recording: carrying the old inputs over would describe a race nobody rode.
+      recorder = record ? new ReplayRecorder(level.id) : null;
       effects.clear();
       wasCrashed = false;
       shakeLeftMs = 0;

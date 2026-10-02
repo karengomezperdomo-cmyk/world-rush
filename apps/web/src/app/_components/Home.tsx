@@ -162,11 +162,10 @@ export function Home({ session }: { session: HomeSession }) {
             </svg>
             PLAY NOW
           </Link>
-          {/* Phase 7 builds the leaderboard. Until then this says so instead of linking to a dead route. */}
-          <button className="btn btn-secondary notch" type="button" disabled title="Coming in Phase 7">
+          <Link className="btn btn-secondary notch" href="/leaderboard">
             <Icon name="bars" className="i" />
             VIEW LEADERBOARD
-          </button>
+          </Link>
         </div>
       </section>
 

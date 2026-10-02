@@ -1,6 +1,6 @@
 'use client';
 
-import { INPUT, mapByNumber, type BikeState, type MapEntry } from '@worldrush/game-core';
+import { INPUT, mapByNumber, TICK_SECONDS, type BikeState, type MapEntry } from '@worldrush/game-core';
 import type { GameAudio, GameHandle } from '@worldrush/game-client';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -12,10 +12,11 @@ import {
   todaysMap,
 } from '../../../lib/schedule';
 import { readSettings, SETTINGS_CHANGED_EVENT, type Settings } from '../../../lib/settings';
+import { startRun as openRun, submitReplay } from '../../../lib/submission';
 import { dayKey, readBestTicks, recordRun } from '../../../lib/run-record';
 import { runTimeParts } from '../../../lib/run-time';
 import { Icon } from '../../_components/IconSprite';
-import { CrashToast, FinishOverlay, PauseOverlay } from './RunOverlays';
+import { CrashToast, FinishOverlay, PauseOverlay, type Verification } from './RunOverlays';
 
 /**
  * The gameplay screen, following control scheme A from `design/screens/gameplay-a.html`: the HUD along the
@@ -71,6 +72,9 @@ export function GameCanvas() {
   const [finish, setFinish] = useState<FinishSummary | null>(null);
   const [bestTicks, setBestTicks] = useState<number | null>(null);
   const [raceEndsIn, setRaceEndsIn] = useState('');
+  const [verification, setVerification] = useState<Verification>({ state: 'none' });
+  /** The server-issued run this attempt belongs to. Null when playing unranked. */
+  const runIdRef = useRef<string | null>(null);
 
   // Per-run bookkeeping the simulation does not keep: how many times this run has crashed, and the tick each
   // checkpoint was reached at. Refs, not state, because they are written from the game loop every frame.
@@ -108,6 +112,32 @@ export function GameCanvas() {
     return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, onChange);
   }, []);
 
+  /**
+   * Sends the recorded inputs and waits for the server's verdict.
+   *
+   * Deliberately not awaited by the caller: the finish screen appears immediately with the local time, and
+   * the rank fills in when the answer arrives. Making the player stare at a spinner before seeing their own
+   * run would be a worse trade than a line that updates a moment later.
+   */
+  const submitFinishedRun = useCallback(async (finishTick: number) => {
+    const runId = runIdRef.current;
+    const replay = handleRef.current?.getReplay() ?? null;
+    if (!runId || !replay) {
+      setVerification({ state: 'unranked', reason: 'not-signed-in' });
+      return;
+    }
+    setVerification({ state: 'checking' });
+    const claimedMs = Math.round(finishTick * TICK_SECONDS * 1000);
+    const outcome = await submitReplay(runId, replay, claimedMs);
+    setVerification(
+      outcome.ok
+        ? { state: 'verified', time: outcome.time }
+        : { state: 'unranked', reason: outcome.reason },
+    );
+    // A run id is good for one submission, so a retry needs a new one.
+    runIdRef.current = null;
+  }, []);
+
   useEffect(() => {
     const parent = stageRef.current;
     if (!parent) return;
@@ -140,6 +170,7 @@ export function GameCanvas() {
 
       if (next.finished && !finishedRef.current) {
         finishedRef.current = true;
+        void submitFinishedRun(next.finishTick ?? next.tick);
         audioRef.current?.finish();
         if (settingsRef.current.vibration) hapticFinish();
         const ticks = next.finishTick ?? next.tick;
@@ -156,14 +187,20 @@ export function GameCanvas() {
     // loading them during the server render would fail.
     void (async () => {
       try {
-        const { startGame, createGameAudio } = await import('@worldrush/game-client');
+        // Asking for a run and loading the engine are independent, so they overlap. A refused run is not an
+        // error: the game still plays, it just will not be ranked.
+        const [{ startGame, createGameAudio }, issued] = await Promise.all([
+          import('@worldrush/game-client'),
+          openRun(),
+        ]);
         if (cancelled) return;
+        runIdRef.current = issued?.runId ?? null;
         const settings = settingsRef.current;
         audioRef.current = createGameAudio({
           soundEffects: settings.soundEffects,
           music: settings.music,
         });
-        handle = await startGame({ parent, level: entry.level, onState });
+        handle = await startGame({ parent, level: entry.level, onState, record: issued !== null });
         if (cancelled) {
           handle.destroy();
           handle = null;
@@ -187,7 +224,7 @@ export function GameCanvas() {
       audioRef.current?.dispose();
       audioRef.current = null;
     };
-  }, []);
+  }, [submitFinishedRun]);
 
   // The daily deadline, for the pause screen. Only ticks while paused — there is no reason to re-render the
   // whole screen once a second while someone is riding.
@@ -201,6 +238,7 @@ export function GameCanvas() {
 
   const unlockAudio = useCallback(() => audioRef.current?.resume(), []);
 
+
   const pause = useCallback(() => {
     handleRef.current?.pause();
     setPaused(true);
@@ -213,8 +251,13 @@ export function GameCanvas() {
 
   const restart = useCallback(() => {
     resetRunBookkeeping();
+    setVerification({ state: 'none' });
     handleRef.current?.restart();
     setPaused(false);
+    // The spent run id cannot be reused, so the retry gets its own — and plays unranked if none is issued.
+    void openRun().then((issued) => {
+      runIdRef.current = issued?.runId ?? null;
+    });
   }, [resetRunBookkeeping]);
 
   const quit = useCallback(() => router.push('/'), [router]);
@@ -317,6 +360,7 @@ export function GameCanvas() {
           splitTicks={finish.splitTicks}
           isBest={finish.isBest}
           previousBestTicks={finish.previousBestTicks}
+          verification={verification}
           onRetry={restart}
           onHome={quit}
         />

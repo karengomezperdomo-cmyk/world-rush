@@ -393,3 +393,24 @@ body {
   object-fit: contain;
   image-rendering: pixelated;
 }
+
+/* The verified chip only ever appears for a time the server returned, so it is allowed to look definitive. */
+.game-screen .verified-chip {
+  display: flex;
+  justify-content: center;
+  width: calc(100% - 4px);
+  margin: 8px 2px 12px;
+}
+
+/* The leaderboard list. `screens.css` styles .lb and .lb-row from the mock; these fill the gaps the mock
+   left: an empty state, a loading line, and the pinned row for a player ranked below the page. */
+.screen .lb-empty {
+  margin: 20px;
+  font: 400 12px var(--font-ui);
+  color: var(--muted);
+}
+
+.screen .lb-row.pinned {
+  margin-top: 10px;
+  --nb: var(--green);
+}

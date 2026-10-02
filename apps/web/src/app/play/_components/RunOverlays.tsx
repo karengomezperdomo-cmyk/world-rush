@@ -3,15 +3,19 @@
 import { CRASH_RESPAWN_TICKS, type MapEntry } from '@worldrush/game-core';
 import { Icon } from '../../_components/IconSprite';
 import { formatDelta, formatRunTime, runTimeParts } from '../../../lib/run-time';
+import type { SubmissionFailure, SubmittedTime } from '../../../lib/submission';
 
 /**
  * The three states a run can interrupt into, from `design/screens/pause.html`, `crash.html` and
  * `finish.html`. Markup keeps the mocks' class names so the copied `game.css` styles them unchanged.
  *
- * Where the mocks show numbers that only a server can produce — a verified badge, a world rank, a
- * leaderboard position — this shows nothing rather than a placeholder. Phase 7 adds replay submission and
- * re-simulation; until it exists, a green "VERIFIED BY THE SERVER" tick would be a claim the player cannot
- * check and that is not true.
+ * The finish screen's rank and verified badge are now real: Phase 7 submits the recorded inputs, the server
+ * re-simulates them and returns the time IT computed. The badge appears only for a time that came back from
+ * that check — never for one the client worked out for itself.
+ *
+ * When a run is not ranked, the screen says which of the reasons it was. "Not submitted" and "refused" are
+ * very different things to a player, and collapsing them into a shrug would be the kind of vagueness that
+ * makes people assume the worst.
  */
 
 /** Time, rendered with the milliseconds a size smaller, as every mock does. */
@@ -124,12 +128,47 @@ export function CrashToast({
   );
 }
 
+/** Why a run has no ranked time, in words a player can act on. */
+const UNRANKED_MESSAGE: Record<SubmissionFailure, string> = {
+  'not-signed-in': 'NOT RANKED · SIGN IN WITH WORLD APP TO SUBMIT TIMES',
+  offline: 'NOT RANKED · COULD NOT REACH THE SERVER. YOUR TIME IS SAFE ON THIS DEVICE',
+  rejected: 'NOT RANKED · THE SERVER COULD NOT VERIFY THIS RUN',
+  'did-not-finish': 'NOT RANKED · THE SERVER DID NOT SEE THIS RUN REACH THE LINE',
+  duplicate: 'NOT RANKED · THIS RUN HAS ALREADY BEEN SUBMITTED',
+  'window-closed': 'NOT RANKED · TODAY’S RACE HAS CLOSED',
+};
+
+function VerificationNote({ verification }: { verification: Verification }) {
+  if (verification.state === 'checking') {
+    return <div className="pending-note notch">CHECKING YOUR RUN WITH THE SERVER…</div>;
+  }
+  if (verification.state === 'verified') {
+    return (
+      <div className="chip good notch verified-chip">
+        <Icon name="check" />
+        VERIFIED BY THE SERVER
+      </div>
+    );
+  }
+  if (verification.state === 'unranked') {
+    return <div className="pending-note notch">{UNRANKED_MESSAGE[verification.reason]}</div>;
+  }
+  return <div className="pending-note notch">TIME NOT SUBMITTED</div>;
+}
+
+export type Verification =
+  | { state: 'none' }
+  | { state: 'checking' }
+  | { state: 'verified'; time: SubmittedTime }
+  | { state: 'unranked'; reason: SubmissionFailure };
+
 export function FinishOverlay({
   map,
   ticks,
   splitTicks,
   isBest,
   previousBestTicks,
+  verification,
   onRetry,
   onHome,
 }: {
@@ -138,6 +177,7 @@ export function FinishOverlay({
   splitTicks: readonly number[];
   isBest: boolean;
   previousBestTicks: number | null;
+  verification: Verification;
   onRetry: () => void;
   onHome: () => void;
 }) {
@@ -175,6 +215,17 @@ export function FinishOverlay({
             <span className="k">BEST ON THIS DEVICE</span>
             <span className="v gold">{formatRunTime(bestTicks)}</span>
           </div>
+          {verification.state === 'verified' && (
+            <div className="row-kv notch">
+              <span className="k">RANK</span>
+              <span className="v green">
+                #{verification.time.rank}{' '}
+                <small style={{ fontSize: 12, color: 'var(--muted)' }}>
+                  / {verification.time.totalPlayers.toLocaleString()}
+                </small>
+              </span>
+            </div>
+          )}
         </div>
 
         {splitTicks.length > 0 && (
@@ -189,10 +240,7 @@ export function FinishOverlay({
           </div>
         )}
 
-        {/* Not a verified time. See the note at the top of this file. */}
-        <div className="pending-note notch">
-          TIME NOT SUBMITTED · SERVER VERIFICATION AND RANKING ARRIVE IN PHASE 7
-        </div>
+        <VerificationNote verification={verification} />
 
         <div className="stack" style={{ gap: 8 }}>
           <button
