@@ -717,6 +717,29 @@ They name six priority languages; A6 ships the first two and the machinery makes
 Map names and taglines are translated too. They live in `game-core` as English constants and must — the
 level id travels inside every replay — so the dictionaries carry `map.<slug>.name` and `.tagline`.
 
+## 1t. The art budget (2026-10-03): 2.0 MB → 715 KB
+
+§14 allows 1.5 MB for a map's package. The checkpoint marshal's 46 HD frames were **1.77 MB on their own**
+— 94% of everything the game downloads, since the whole rest of `public/art` is 230 KB — so the game was
+over budget on one character's animation.
+
+**The obvious fix was wrong, and measuring is what showed it.** She is drawn at about 0.63×, so the frames
+look oversized; but PixiJS renders at `devicePixelRatio`, and on a 3× phone those 264 pixels are painted
+across ~503. She is already being scaled **up** by nearly 2×. Storing her smaller would have cost real
+quality on exactly the devices this game is for.
+
+So the pixels stayed and the encoding changed: **WebP q95, 433 KB, 75% smaller**, with alpha encoded
+losslessly (measured: alpha error exactly 0, so no halo). Lossless WebP (1102 KB) and near-lossless
+(739 KB) were measured too; q95 was chosen after comparing against the original at 3× zoom **and** at the
+503-pixel size a 3× phone actually draws, where they are not distinguishable. Trimming the transparent
+margins was tried and made the files *bigger* — the frames are nearly full, and per-frame sizes stop
+aligning — which is written down so nobody tries it twice.
+
+The PNGs remain the masters in the repository; `pnpm art:marshal` produces what ships. Total art payload:
+**2.0 MB → 715 KB**, inside the budget.
+
+This does not change §1p: that is the JavaScript figure, and it is still 185 KB against a 150 KB target.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·

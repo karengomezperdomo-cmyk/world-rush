@@ -38,9 +38,13 @@ const FILES = [
   'controls/lean-back.png',
   'controls/lean-forward.png',
   // The HD checkpoint animation: idle (8) -> activate (14, once) -> loop (24). 160x264 RGBA each.
-  ...Array.from({ length: 8 }, (_, index) => `marshal-hd/idle-${index}.png`),
-  ...Array.from({ length: 14 }, (_, index) => `marshal-hd/activate-${index}.png`),
-  ...Array.from({ length: 24 }, (_, index) => `marshal-hd/loop-${index}.png`),
+  //
+  // WebP, not the PNG masters beside them. At 1.77 MB those 46 frames were 94% of everything the game
+  // downloads; the same pixels are 433 KB as WebP, and `tools/art/encode-marshal.mjs` records what was
+  // measured and looked at before choosing that encoding.
+  ...Array.from({ length: 8 }, (_, index) => `marshal-hd/idle-${index}.webp`),
+  ...Array.from({ length: 14 }, (_, index) => `marshal-hd/activate-${index}.webp`),
+  ...Array.from({ length: 24 }, (_, index) => `marshal-hd/loop-${index}.webp`),
   // The Home screen's week grid, header and hero.
   'logo/rush7.png',
   ...[

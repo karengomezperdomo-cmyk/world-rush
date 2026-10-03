@@ -550,7 +550,7 @@ async function loadFrames(urls: readonly string[]): Promise<Texture[]> {
 async function loadSmoothFrames(animation: string, count: number): Promise<Texture[]> {
   return Promise.all(
     Array.from({ length: count }, (_, index) =>
-      Assets.load<Texture>(`/art/marshal-hd/${animation}-${index}.png`),
+      Assets.load<Texture>(`/art/marshal-hd/${animation}-${index}.webp`),
     ),
   );
 }
