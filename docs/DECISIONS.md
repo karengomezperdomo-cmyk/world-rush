@@ -684,6 +684,39 @@ CI gained a second job that runs the whole suite against `postgres:18-alpine`.
 > server path is written and typechecked but unexercised; its first CI run is its verification. Written down
 > here because "we test against real Postgres" would otherwise read as a fact from the moment it is merged.
 
+## 1s. A6 done (2026-10-03): the app speaks Spanish
+
+Decision A6 is "EN + ES, with i18n from day one". Until today every string was an English literal inside a
+component, which is the version of that decision that quietly never happens.
+
+World's guidelines decided the shape (read 2026-10-03): recognise the locale from the **`Accept-Language`
+header**, and localise at all — "apps that are localised for each region will perform significantly better".
+They name six priority languages; A6 ships the first two and the machinery makes the rest a dictionary each.
+
+- **Resolved on the server**, so the first paint is already in the player's language and `<html lang>` is
+  right from the start. No flash of English.
+- **No locale in the URL.** The documented Next.js approach puts the language in the path, which exists so
+  search engines get one page per language — and this app opens inside World App and is explicitly `noindex`.
+  Routing would have cost every link and bought nothing.
+- **A missing translation is a compile error.** English defines the key set; Spanish is typed against it.
+- **Quality values are honoured** when parsing the header: `es;q=0.9, en;q=0.95` is English, and reading left
+  to right would have answered Spanish. Eight tests cover that, region subtags and malformed headers.
+- Settings has AUTO / ENGLISH / ESPAÑOL. AUTO is not a language: it hands the choice back to the phone.
+
+### What translating exposed, which is the usual reason to do it early
+
+- `formatCount` was pinned to en-US with a note saying "when Spanish arrives the number and the words change
+  together". They do now: a Spanish board reads `3.421 PILOTOS`.
+- Three places where Spanish did not fit: the day tab (`EN VIVO` wrapped, so the tab has its own `VIVO`),
+  and the control pads (`INCLINAR ATRÁS` spilled out of the button, so the pads have their own short words
+  while the how-to-play tiles keep the long ones). Found by screenshotting, not by reading code.
+- A lint warning that should not be obeyed literally: adding `t` to the game-start effect's dependencies
+  would restart the canvas, the physics world and the run whenever the language changed. It reads the
+  translator through a ref instead.
+
+Map names and taglines are translated too. They live in `game-core` as English constants and must — the
+level id travels inside every replay — so the dictionaries carry `map.<slug>.name` and `.tagline`.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·
