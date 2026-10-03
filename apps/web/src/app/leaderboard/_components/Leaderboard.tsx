@@ -133,11 +133,7 @@ function Podium({ entries }: { entries: Entry[] }) {
 function PodiumPlace({ entry, place }: { entry: Entry; place: 1 | 2 | 3 }) {
   return (
     <div className={`pod p${place} notch`}>
-      {place === 1 ? (
-        <Icon name="crown" className="i crown" />
-      ) : (
-        <i className="medal">{place}</i>
-      )}
+      {place === 1 ? <Icon name="crown" className="i crown" /> : <i className="medal">{place}</i>}
       <Avatar name={entry.username} size={place === 1 ? 48 : 36} />
       <div className="nm">{entry.username ?? 'RIDER'}</div>
       <div className="tm">{formatRunTime(entry.timeMs * TICKS_PER_MS)}</div>
@@ -316,8 +312,8 @@ export function Leaderboard() {
             )}
 
             <div className="foot-note">
-              {formatCount(board.totalPlayers)} {board.totalPlayers === 1 ? 'RACER' : 'RACERS'} · ONE
-              BEST TIME EACH
+              {formatCount(board.totalPlayers)} {board.totalPlayers === 1 ? 'RACER' : 'RACERS'} ·
+              ONE BEST TIME EACH
             </div>
           </>
         )}

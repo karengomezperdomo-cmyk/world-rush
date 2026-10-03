@@ -107,7 +107,9 @@ export function CrashToast({
     <div className="toast notch" role="status">
       <div className="h">CRASH!</div>
       <div className="p">
-        {respawnCheckpoint === null ? 'RESPAWN AT THE START' : `RESPAWN AT CHECKPOINT ${respawnCheckpoint}`}
+        {respawnCheckpoint === null
+          ? 'RESPAWN AT THE START'
+          : `RESPAWN AT CHECKPOINT ${respawnCheckpoint}`}
       </div>
       <div style={{ margin: '10px 0 2px', height: 6, background: '#3a0f1c', position: 'relative' }}>
         <i
@@ -241,8 +243,8 @@ export function FinishOverlay({
               <span className="v green">
                 #{verification.time.rank}{' '}
                 <small style={{ fontSize: 12, color: 'var(--muted)' }}>
-                  {/* en-US, like every word around it: a Spanish phone would otherwise write 3.421. */}/{' '}
-                  {verification.time.totalPlayers.toLocaleString('en-US')}
+                  {/* en-US, like every word around it: a Spanish phone would otherwise write 3.421. */}
+                  / {verification.time.totalPlayers.toLocaleString('en-US')}
                 </small>
               </span>
             </div>

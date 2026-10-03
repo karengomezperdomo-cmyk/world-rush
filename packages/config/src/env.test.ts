@@ -148,7 +148,9 @@ describe('parseServerEnv', () => {
     });
 
     it('passes a usable one through', () => {
-      expect(parseServerEnv({ ...dev, CRON_SECRET: 'a'.repeat(32) }).cronSecret).toBe('a'.repeat(32));
+      expect(parseServerEnv({ ...dev, CRON_SECRET: 'a'.repeat(32) }).cronSecret).toBe(
+        'a'.repeat(32),
+      );
     });
   });
 

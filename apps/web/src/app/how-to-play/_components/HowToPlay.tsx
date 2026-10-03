@@ -66,12 +66,13 @@ export function HowToPlay() {
 
         {ALL_MAPS_OPEN_FOR_TESTING ? (
           <Card icon="calendar" title="EVERY MAP IS OPEN RIGHT NOW">
-            While the game is being tested, all seven maps can be played whenever you like. Normally one opens
-            each day at 00:00 UTC and its leaderboard freezes when the day ends.
+            While the game is being tested, all seven maps can be played whenever you like. Normally
+            one opens each day at 00:00 UTC and its leaderboard freezes when the day ends.
           </Card>
         ) : (
           <Card icon="calendar" title="ONE MAP EVERY DAY">
-            A new map opens each day at 00:00 UTC. When the day ends, that leaderboard freezes for good.
+            A new map opens each day at 00:00 UTC. When the day ends, that leaderboard freezes for
+            good.
           </Card>
         )}
 
@@ -85,9 +86,7 @@ export function HowToPlay() {
               <p>Four buttons. Hold to keep them pressed.</p>
             </div>
           </div>
-          <div
-            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, width: '100%' }}
-          >
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, width: '100%' }}>
             {CONTROLS.map((control) => (
               <div className="ctl notch" key={control.art}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- pixel art, must not be resampled */}
@@ -99,8 +98,8 @@ export function HowToPlay() {
         </div>
 
         <Card icon="clock" title="YOUR BEST TIME COUNTS">
-          Crash and you respawn at the last checkpoint, with the clock still running. Retry as often as you
-          like — only your fastest run counts.
+          Crash and you respawn at the last checkpoint, with the clock still running. Retry as often
+          as you like — only your fastest run counts.
         </Card>
 
         <Card icon="ring" title="ONE HUMAN, ONE SPOT">
@@ -108,13 +107,13 @@ export function HowToPlay() {
         </Card>
 
         <Card icon="check" title="THE SERVER TIMES YOUR RUN">
-          Your run sends the buttons you pressed, not the time you got. The server replays them and works the
-          time out itself, so a time only counts once it has been checked.
+          Your run sends the buttons you pressed, not the time you got. The server replays them and
+          works the time out itself, so a time only counts once it has been checked.
         </Card>
 
         <Card icon="trophy" title="SEVEN BOARDS, SEVEN CHANCES" tone="gold">
-          Every day has its own leaderboard, and each one closes for good when the day ends. Miss a day and
-          nothing is lost — you simply are not on that day’s board.
+          Every day has its own leaderboard, and each one closes for good when the day ends. Miss a
+          day and nothing is lost — you simply are not on that day’s board.
         </Card>
       </div>
 

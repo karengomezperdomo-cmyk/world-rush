@@ -121,16 +121,16 @@ describe('finalizing a competition', () => {
     const competition = await competitionForDay(db, MONDAY);
     const cheat = await putScore(competition.id, 10_000, new Date('2026-10-05T09:00:00Z'));
     const honest = await putScore(competition.id, 41_000, new Date('2026-10-05T10:00:00Z'));
-    await db
-      .update(bestScores)
-      .set({ isVisible: false })
-      .where(eq(bestScores.userId, cheat));
+    await db.update(bestScores).set({ isVisible: false }).where(eq(bestScores.userId, cheat));
 
     const finalized = await finalizeCompetition(db, competition.id, AFTER_MONDAY);
     expect(finalized.participantsCount).toBe(1);
     expect(finalized.winnerTimeMs).toBe(41_000);
 
-    const rows = await db.select().from(bestScores).where(eq(bestScores.competitionId, competition.id));
+    const rows = await db
+      .select()
+      .from(bestScores)
+      .where(eq(bestScores.competitionId, competition.id));
     expect(rows.find((row) => row.userId === honest)!.finalRank).toBe(1);
     expect(rows.find((row) => row.userId === cheat)!.finalRank).toBeNull();
   });

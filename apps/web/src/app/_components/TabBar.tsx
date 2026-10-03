@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useOnline } from '../../lib/online';
 import { Icon, type IconName } from './IconSprite';
 
 /**
@@ -26,26 +27,37 @@ const TABS: readonly {
 ];
 
 export function TabBar({ active }: { active: string }) {
+  const online = useOnline();
   return (
-    <nav className="tabbar">
-      {TABS.map((tab) =>
-        tab.href ? (
-          <Link
-            key={tab.id}
-            className={tab.id === active ? 'tab on' : 'tab'}
-            href={tab.href}
-            aria-current={tab.id === active ? 'page' : undefined}
-          >
-            <Icon name={tab.icon} />
-            {tab.label}
-          </Link>
-        ) : (
-          <span key={tab.id} className="tab" aria-disabled="true" title={tab.note}>
-            <Icon name={tab.icon} />
-            {tab.label}
-          </span>
-        ),
+    <>
+      {/* Said once, where every screen already looks: without a connection the game still plays, but nothing
+          reaches the board. The wording promises no retry, because there is none — a run finished offline is
+          not queued for later. */}
+      {!online && (
+        <p className="offline-strip notch" role="status">
+          OFFLINE · YOU CAN STILL RIDE, BUT NO TIME WILL BE RANKED
+        </p>
       )}
-    </nav>
+      <nav className="tabbar">
+        {TABS.map((tab) =>
+          tab.href ? (
+            <Link
+              key={tab.id}
+              className={tab.id === active ? 'tab on' : 'tab'}
+              href={tab.href}
+              aria-current={tab.id === active ? 'page' : undefined}
+            >
+              <Icon name={tab.icon} />
+              {tab.label}
+            </Link>
+          ) : (
+            <span key={tab.id} className="tab" aria-disabled="true" title={tab.note}>
+              <Icon name={tab.icon} />
+              {tab.label}
+            </span>
+          ),
+        )}
+      </nav>
+    </>
   );
 }

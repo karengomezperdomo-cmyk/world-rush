@@ -128,7 +128,11 @@ export async function readLeaderboard(
               sql`(${bestScores.bestTimeMs}, ${bestScores.achievedAt}, ${bestScores.userId}) < (${score.bestTimeMs}, ${score.achievedAt}, ${score.userId})`,
             ),
           )
-          .orderBy(desc(bestScores.bestTimeMs), desc(bestScores.achievedAt), desc(bestScores.userId))
+          .orderBy(
+            desc(bestScores.bestTimeMs),
+            desc(bestScores.achievedAt),
+            desc(bestScores.userId),
+          )
           .limit(1);
         you = {
           rank: (ahead[0]?.count ?? 0) + 1,

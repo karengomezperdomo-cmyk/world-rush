@@ -1,6 +1,12 @@
 'use client';
 
-import { INPUT, mapByNumber, TICK_SECONDS, type BikeState, type MapEntry } from '@worldrush/game-core';
+import {
+  INPUT,
+  mapByNumber,
+  TICK_SECONDS,
+  type BikeState,
+  type MapEntry,
+} from '@worldrush/game-core';
 import type { GameAudio, GameHandle } from '@worldrush/game-client';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -12,11 +18,7 @@ import {
   todaysMap,
 } from '../../../lib/schedule';
 import { readSettings, SETTINGS_CHANGED_EVENT, type Settings } from '../../../lib/settings';
-import {
-  startRun as openRun,
-  submitReplay,
-  type SubmissionFailure,
-} from '../../../lib/submission';
+import { startRun as openRun, submitReplay, type SubmissionFailure } from '../../../lib/submission';
 import { dayKey, readBestTicks, recordRun } from '../../../lib/run-record';
 import { runTimeParts } from '../../../lib/run-time';
 import { Icon } from '../../_components/IconSprite';
@@ -290,7 +292,6 @@ export function GameCanvas() {
 
   const unlockAudio = useCallback(() => audioRef.current?.resume(), []);
 
-
   const pause = useCallback(() => {
     handleRef.current?.pause();
     setPaused(true);
@@ -350,7 +351,11 @@ export function GameCanvas() {
                 <span
                   key={index}
                   className={
-                    index < reached ? 'pip done notch' : index === reached ? 'pip next notch' : 'pip notch'
+                    index < reached
+                      ? 'pip done notch'
+                      : index === reached
+                        ? 'pip next notch'
+                        : 'pip notch'
                   }
                 >
                   {index < reached && <Icon name="check" className="i" />}
@@ -364,7 +369,11 @@ export function GameCanvas() {
       <div className="track notch">
         <div className="fill" style={{ width: `${progress}%` }} />
         {map?.level.checkpoints.map((checkpoint) => (
-          <i key={checkpoint} className="mk" style={{ left: `${checkpointPosition(checkpoint, map)}%` }} />
+          <i
+            key={checkpoint}
+            className="mk"
+            style={{ left: `${checkpointPosition(checkpoint, map)}%` }}
+          />
         ))}
         <i className="me" style={{ left: `${progress}%` }} />
         <i className="goal" />

@@ -48,7 +48,6 @@ body {
   text-align: center;
 }
 
-
 /* ---------------------------------------------------------------------------
  * Bridging `design/` to a real device.
  *
@@ -179,7 +178,6 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 
 /* ---------------------------------------------------------------------------
  * The gameplay screen.
@@ -453,4 +451,25 @@ body {
 /* The mock's pinned row sits flush under the list, with the green 'me' treatment doing the highlighting. */
 .screen .lb.pinned {
   margin-top: 10px;
+}
+
+/* Sits directly above the tab bar, which is 60px tall plus the safe area. Fixed for the same reason the tab
+   bar is (see the override above): `.screen` is as tall as its content, so an absolutely positioned strip
+   would land at the bottom of a scrolling page instead of on screen. Out of flow so that a connection
+   dropping does not reflow the screen under the player's thumb. */
+.offline-strip {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(366px, calc(100% - 24px));
+  bottom: calc(66px + var(--safe-bottom));
+  z-index: 20;
+  margin: 0;
+  padding: 6px 8px;
+  text-align: center;
+  font: 400 9px var(--font-label);
+  letter-spacing: 0.08em;
+  color: #ffd27a;
+  background: #2a1b06f2;
+  --nb: #8a6a1f;
 }

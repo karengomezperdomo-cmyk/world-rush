@@ -138,7 +138,11 @@ export async function competitionForReading(
  * Days that never ran are simply absent — there is no row to invent for a day on which nobody played, and
  * the caller knows the seven maps of a week from `game-core` anyway.
  */
-export async function weekCompetitions(db: Db, at: Date, now = new Date()): Promise<CompetitionRow[]> {
+export async function weekCompetitions(
+  db: Db,
+  at: Date,
+  now = new Date(),
+): Promise<CompetitionRow[]> {
   const week = weekStartUtc(at);
   const rows = (await db
     .select()

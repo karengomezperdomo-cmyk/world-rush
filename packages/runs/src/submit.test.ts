@@ -382,10 +382,7 @@ describe('the leaderboard', () => {
     const competition = await competitionForDay(db, MONDAY);
     const verified = await makeUser('0x3030999999999999999999999999999999999999');
     const anonymous = await makeUser('0x4040aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
-    await db
-      .update(users)
-      .set({ humanVerifiedAt: MONDAY })
-      .where(eq(users.id, verified));
+    await db.update(users).set({ humanVerifiedAt: MONDAY }).where(eq(users.id, verified));
 
     for (const [index, userId] of [verified, anonymous].entries()) {
       const [run] = await db
@@ -431,17 +428,23 @@ describe('the submission window', () => {
   it('accepts a run finished just after the close, if it started before it', () => {
     // Finishing at 23:59:58 must not be unrankable through no fault of the player.
     const startedAt = new Date('2026-10-05T23:59:00Z');
-    expect(submissionWindowOpen(competition, startedAt, new Date('2026-10-06T00:01:30Z'))).toBe(true);
+    expect(submissionWindowOpen(competition, startedAt, new Date('2026-10-06T00:01:30Z'))).toBe(
+      true,
+    );
   });
 
   it('refuses one submitted long after the grace has run out', () => {
     const startedAt = new Date('2026-10-05T23:59:00Z');
-    expect(submissionWindowOpen(competition, startedAt, new Date('2026-10-06T00:05:00Z'))).toBe(false);
+    expect(submissionWindowOpen(competition, startedAt, new Date('2026-10-06T00:05:00Z'))).toBe(
+      false,
+    );
   });
 
   it('refuses a run that started after the competition closed', () => {
     const startedAt = new Date('2026-10-06T00:00:30Z');
-    expect(submissionWindowOpen(competition, startedAt, new Date('2026-10-06T00:00:40Z'))).toBe(false);
+    expect(submissionWindowOpen(competition, startedAt, new Date('2026-10-06T00:00:40Z'))).toBe(
+      false,
+    );
   });
 
   /**

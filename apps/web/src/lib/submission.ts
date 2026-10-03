@@ -40,9 +40,7 @@ const FAILURE_BY_CODE: Record<string, SubmissionFailure> = {
   wrong_map: 'other-map',
 };
 
-export type StartOutcome =
-  | { ok: true; run: StartedRun }
-  | { ok: false; reason: SubmissionFailure };
+export type StartOutcome = { ok: true; run: StartedRun } | { ok: false; reason: SubmissionFailure };
 
 /**
  * Opens a run.
@@ -66,8 +64,7 @@ export async function startRun(): Promise<StartOutcome> {
 }
 
 export type SubmissionOutcome =
-  | { ok: true; time: SubmittedTime }
-  | { ok: false; reason: SubmissionFailure };
+  { ok: true; time: SubmittedTime } | { ok: false; reason: SubmissionFailure };
 
 /**
  * Posts the replay and returns the server's verdict.

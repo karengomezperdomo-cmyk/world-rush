@@ -82,9 +82,7 @@ export async function weekBoards(db: Db, at: Date, now = new Date()): Promise<Da
       status: statusOf(day, competition, now),
       competitionId: competition?.id ?? null,
       // A finalized competition already counted its players; a live one is counted now.
-      players: competition
-        ? (competition.participantsCount ?? counts.get(competition.id) ?? 0)
-        : 0,
+      players: competition ? (competition.participantsCount ?? counts.get(competition.id) ?? 0) : 0,
       winnerTimeMs: competition?.winnerTimeMs ?? null,
     };
   });

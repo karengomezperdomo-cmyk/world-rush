@@ -1,4 +1,10 @@
-import { competitionForReading, mapForDay, playerCount, readLeaderboard, weekBoards } from '@worldrush/runs';
+import {
+  competitionForReading,
+  mapForDay,
+  playerCount,
+  readLeaderboard,
+  weekBoards,
+} from '@worldrush/runs';
 import { getDb } from '../../../lib/db';
 import { getCurrentSession } from '../../../lib/session-cookie';
 

@@ -29,7 +29,10 @@ const serverEnvSchema = z.object({
    * refuses every caller. Making it required would turn "we have not set up cron yet" into "the site will
    * not start".
    */
-  CRON_SECRET: z.string().min(16, { error: 'CRON_SECRET must be at least 16 characters' }).optional(),
+  CRON_SECRET: z
+    .string()
+    .min(16, { error: 'CRON_SECRET must be at least 16 characters' })
+    .optional(),
   RANKED_ENABLED: flag,
   REWARDS_ENABLED: flag,
   NOTIFICATIONS_ENABLED: flag,
