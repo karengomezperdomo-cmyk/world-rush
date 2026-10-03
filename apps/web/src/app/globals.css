@@ -277,6 +277,26 @@ body {
   --nb: var(--line-3);
 }
 
+/* Shown while riding, when the server did not open a ranked run. Readable but not alarming: the run still
+   counts on this device, so it must not look like an error, and it must not cover the track or the pads. */
+.unranked-warning {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  /* Clear of the progress track, whose markers stand 6px proud of its 8px bar at safe-top + 122. */
+  top: calc(var(--safe-top) + 150px);
+  z-index: 6;
+  margin: 0;
+  padding: 5px 8px;
+  text-align: center;
+  font: 400 9px var(--font-label);
+  letter-spacing: 0.1em;
+  color: #ffd27a;
+  background: #2a1b06e6;
+  --nb: #8a6a1f;
+  pointer-events: none;
+}
+
 .game-error {
   position: absolute;
   left: 20px;

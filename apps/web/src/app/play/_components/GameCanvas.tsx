@@ -12,11 +12,21 @@ import {
   todaysMap,
 } from '../../../lib/schedule';
 import { readSettings, SETTINGS_CHANGED_EVENT, type Settings } from '../../../lib/settings';
-import { startRun as openRun, submitReplay } from '../../../lib/submission';
+import {
+  startRun as openRun,
+  submitReplay,
+  type SubmissionFailure,
+} from '../../../lib/submission';
 import { dayKey, readBestTicks, recordRun } from '../../../lib/run-record';
 import { runTimeParts } from '../../../lib/run-time';
 import { Icon } from '../../_components/IconSprite';
-import { CrashToast, FinishOverlay, PauseOverlay, type Verification } from './RunOverlays';
+import {
+  CrashToast,
+  FinishOverlay,
+  PauseOverlay,
+  UNRANKED_WARNING,
+  type Verification,
+} from './RunOverlays';
 
 /**
  * The gameplay screen, following control scheme A from `design/screens/gameplay-a.html`: the HUD along the
@@ -75,6 +85,43 @@ export function GameCanvas() {
   const [verification, setVerification] = useState<Verification>({ state: 'none' });
   /** The server-issued run this attempt belongs to. Null when playing unranked. */
   const runIdRef = useRef<string | null>(null);
+  /**
+   * Why this attempt is not ranked, known from the moment the server declined to open a run.
+   *
+   * Kept twice on purpose: the ref is read from the finish handler, which runs inside the game loop's
+   * callback and must not depend on a re-render having happened, and the state drives the warning the
+   * player sees while riding.
+   */
+  const unrankedRef = useRef<SubmissionFailure | null>(null);
+  const [unranked, setUnranked] = useState<SubmissionFailure | null>(null);
+  const noteUnranked = useCallback((reason: SubmissionFailure | null) => {
+    unrankedRef.current = reason;
+    setUnranked(reason);
+  }, []);
+
+  /**
+   * Opens a run for the map actually on screen, and returns its id — or null, having recorded why not.
+   *
+   * The map check is not paranoia. `ALL_MAPS_OPEN_FOR_TESTING` lets any of the seven be played, but a
+   * competition only ever runs today's, so a run issued while map 1 is on screen on a Saturday is rejected
+   * as `wrong_map` after two minutes of riding. The mismatch is visible before the race, so it is said then.
+   */
+  const openRunFor = useCallback(
+    async (levelId: string): Promise<string | null> => {
+      const issued = await openRun();
+      if (!issued.ok) {
+        noteUnranked(issued.reason);
+        return null;
+      }
+      if (issued.run.mapSlug !== levelId) {
+        noteUnranked('other-map');
+        return null;
+      }
+      noteUnranked(null);
+      return issued.run.runId;
+    },
+    [noteUnranked],
+  );
 
   // Per-run bookkeeping the simulation does not keep: how many times this run has crashed, and the tick each
   // checkpoint was reached at. Refs, not state, because they are written from the game loop every frame.
@@ -123,7 +170,9 @@ export function GameCanvas() {
     const runId = runIdRef.current;
     const replay = handleRef.current?.getReplay() ?? null;
     if (!runId || !replay) {
-      setVerification({ state: 'unranked', reason: 'not-signed-in' });
+      // The reason was established when the run was opened. Guessing "not signed in" here was wrong for
+      // every other cause, and told a signed-in player with a network problem to go and sign in.
+      setVerification({ state: 'unranked', reason: unrankedRef.current ?? 'rejected' });
       return;
     }
     setVerification({ state: 'checking' });
@@ -191,16 +240,19 @@ export function GameCanvas() {
         // error: the game still plays, it just will not be ranked.
         const [{ startGame, createGameAudio }, issued] = await Promise.all([
           import('@worldrush/game-client'),
-          openRun(),
+          openRunFor(entry.level.id),
         ]);
         if (cancelled) return;
-        runIdRef.current = issued?.runId ?? null;
+        runIdRef.current = issued;
         const settings = settingsRef.current;
         audioRef.current = createGameAudio({
           soundEffects: settings.soundEffects,
           music: settings.music,
         });
-        handle = await startGame({ parent, level: entry.level, onState, record: issued !== null });
+        // Always recorded, even when this attempt cannot be ranked. The recorder costs a few bytes per
+        // input change, and a retry opens a NEW run — which may well succeed where the first one failed, and
+        // would then have had nothing to submit. Whether a replay is SENT is decided by the run id, not here.
+        handle = await startGame({ parent, level: entry.level, onState, record: true });
         if (cancelled) {
           handle.destroy();
           handle = null;
@@ -224,7 +276,7 @@ export function GameCanvas() {
       audioRef.current?.dispose();
       audioRef.current = null;
     };
-  }, [submitFinishedRun]);
+  }, [openRunFor, submitFinishedRun]);
 
   // The daily deadline, for the pause screen. Only ticks while paused — there is no reason to re-render the
   // whole screen once a second while someone is riding.
@@ -255,10 +307,8 @@ export function GameCanvas() {
     handleRef.current?.restart();
     setPaused(false);
     // The spent run id cannot be reused, so the retry gets its own — and plays unranked if none is issued.
-    void openRun().then((issued) => {
-      runIdRef.current = issued?.runId ?? null;
-    });
-  }, [resetRunBookkeeping]);
+    if (map) void openRunFor(map.level.id).then((runId) => (runIdRef.current = runId));
+  }, [map, openRunFor, resetRunBookkeeping]);
 
   const quit = useCallback(() => router.push('/'), [router]);
 
@@ -319,6 +369,14 @@ export function GameCanvas() {
         <i className="me" style={{ left: `${progress}%` }} />
         <i className="goal" />
       </div>
+
+      {/* Said before the race, not after it: the server either opened a ranked run or it did not, and the
+          player deserves to know which while they can still do something about it. */}
+      {unranked !== null && finish === null && (
+        <p className="unranked-warning notch" role="status">
+          {UNRANKED_WARNING[unranked]}
+        </p>
+      )}
 
       {/* "Swap sides" mirrors the two clusters, so gas and brake fall under the left thumb. */}
       <div className={swapSides ? 'pads-a swapped' : 'pads-a'} onPointerDown={unlockAudio}>

@@ -447,6 +447,37 @@ Two things now protect this:
 semantics precisely so that results do not vary by architecture, which makes this strong evidence rather than
 proof — but the honest position is that the phone has not been checked, and that is logged as D2b2.
 
+## 1n. The open-runs lockout, fixed (2026-10-02)
+
+Phase 7 capped a player at five runs open at once and **refused** the sixth. The cap was right; refusing was
+not. A run is left open every time someone closes the app mid-race — crash, phone call, train stop — which is
+ordinary behaviour, not abuse. After five of those the account was locked out of ranked play with nothing to
+click to clear it, and the client said nothing: it quietly played on, unranked, and only the finish screen
+hinted at it, with the wrong reason ("sign in with World App") because the client had thrown the real one
+away.
+
+Three changes, in the order they matter:
+
+1. **Starting a run no longer fails because of older ones.** Runs whose competition has closed (window plus
+   grace) are marked `expired` — they could never be submitted again — and if the player is still at the cap,
+   the OLDEST open run is marked `abandoned` to make room. The cap now bounds concurrency, which is what it
+   was for, instead of rationing play. Each closed run keeps its reason, so a lost time can be explained from
+   the row rather than guessed at.
+2. **Submitting a closed run says so.** It used to answer "this run has already been submitted", which is a
+   lie the player cannot check. There is a `closed` code now, separate from `duplicate`.
+3. **The player is told BEFORE the race, not after it.** Whether a run can be ranked is known the moment the
+   server does or does not issue one, so an unrankable attempt now carries a "PRACTICE RUN · …" line while it
+   is being ridden, and the finish screen names the actual reason. Finding out after a personal best is the
+   version of this that makes people distrust the whole leaderboard.
+
+**Found while verifying it, and fixed with it:** with `ALL_MAPS_OPEN_FOR_TESTING` on (§1l) any map can be
+played, but a competition only ever runs today's — so playing map 1 on a Saturday rode two minutes and then
+got `wrong_map` from the server, shown as "the server could not verify this run". The client compares the
+issued run's map against the one on screen and says "ONLY TODAY'S MAP HAS A LEADERBOARD" up front instead.
+
+Verified by playing: today's map ridden to the line in the browser returns **VERIFIED BY THE SERVER** with a
+real rank, and eight consecutive `POST /api/runs/start` now return 200 where the sixth used to return 409.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·

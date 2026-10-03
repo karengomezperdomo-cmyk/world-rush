@@ -136,6 +136,26 @@ const UNRANKED_MESSAGE: Record<SubmissionFailure, string> = {
   'did-not-finish': 'NOT RANKED · THE SERVER DID NOT SEE THIS RUN REACH THE LINE',
   duplicate: 'NOT RANKED · THIS RUN HAS ALREADY BEEN SUBMITTED',
   'window-closed': 'NOT RANKED · TODAY’S RACE HAS CLOSED',
+  closed: 'NOT RANKED · THIS RUN WAS CLOSED BEFORE IT WAS SENT. RIDE IT AGAIN TO RANK',
+  'other-map': 'NOT RANKED · ONLY TODAY’S MAP HAS A LEADERBOARD',
+};
+
+/**
+ * The same reasons, said BEFORE the race instead of after it.
+ *
+ * Whether a run can be ranked is known the moment the server does or does not issue it, so a player who is
+ * about to ride for nothing is told while they can still do something about it. Finding out at the finish
+ * line, after a personal best, is the version of this that makes people distrust the whole leaderboard.
+ */
+export const UNRANKED_WARNING: Record<SubmissionFailure, string> = {
+  'not-signed-in': 'PRACTICE RUN · SIGN IN WITH WORLD APP TO RANK',
+  offline: 'PRACTICE RUN · NO CONNECTION TO THE SERVER',
+  rejected: 'PRACTICE RUN · THE SERVER DID NOT OPEN A RANKED RUN',
+  'did-not-finish': 'PRACTICE RUN · THIS RUN WILL NOT BE RANKED',
+  duplicate: 'PRACTICE RUN · THIS RUN WILL NOT BE RANKED',
+  'window-closed': 'PRACTICE RUN · TODAY’S RACE HAS CLOSED',
+  closed: 'PRACTICE RUN · THIS RUN WILL NOT BE RANKED',
+  'other-map': 'PRACTICE RUN · ONLY TODAY’S MAP HAS A LEADERBOARD',
 };
 
 function VerificationNote({ verification }: { verification: Verification }) {

@@ -19,7 +19,9 @@ export type SubmissionFailure =
   | 'rejected'
   | 'did-not-finish'
   | 'duplicate'
-  | 'window-closed';
+  | 'window-closed'
+  | 'closed'
+  | 'other-map';
 
 export interface SubmittedTime {
   readonly durationMs: number;
@@ -29,26 +31,43 @@ export interface SubmittedTime {
   readonly totalPlayers: number;
 }
 
-/** Opens a run. Returns null when there is no session or the server will not issue one. */
-export async function startRun(): Promise<StartedRun | null> {
+/** Server codes, translated into the reasons the screens know how to word. */
+const FAILURE_BY_CODE: Record<string, SubmissionFailure> = {
+  did_not_finish: 'did-not-finish',
+  duplicate: 'duplicate',
+  window_closed: 'window-closed',
+  closed: 'closed',
+  wrong_map: 'other-map',
+};
+
+export type StartOutcome =
+  | { ok: true; run: StartedRun }
+  | { ok: false; reason: SubmissionFailure };
+
+/**
+ * Opens a run.
+ *
+ * It returns WHY it failed, not merely that it did. The caller knows at this point — before the player has
+ * ridden a metre — that this run will not be ranked, and a reason is what lets the screen say so instead of
+ * letting someone race for two minutes and find out afterwards.
+ */
+export async function startRun(): Promise<StartOutcome> {
   try {
     const response = await fetch('/api/runs/start', { method: 'POST' });
-    if (!response.ok) return null;
-    return (await response.json()) as StartedRun;
+    if (response.status === 401) return { ok: false, reason: 'not-signed-in' };
+    if (!response.ok) {
+      const body = (await response.json().catch(() => ({}))) as { code?: string };
+      return { ok: false, reason: FAILURE_BY_CODE[body.code ?? ''] ?? 'rejected' };
+    }
+    return { ok: true, run: (await response.json()) as StartedRun };
   } catch {
-    return null;
+    return { ok: false, reason: 'offline' };
   }
 }
 
 export type SubmissionOutcome =
   | { ok: true; time: SubmittedTime }
   | { ok: false; reason: SubmissionFailure };
-
-const FAILURE_BY_CODE: Record<string, SubmissionFailure> = {
-  did_not_finish: 'did-not-finish',
-  duplicate: 'duplicate',
-  window_closed: 'window-closed',
-};
 
 /**
  * Posts the replay and returns the server's verdict.

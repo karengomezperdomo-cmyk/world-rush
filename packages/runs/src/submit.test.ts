@@ -92,10 +92,49 @@ describe('starting a run', () => {
     expect(b.competitionId).toBe(a.competitionId);
   });
 
-  it('refuses to open an unbounded number of runs for one player', async () => {
+  /**
+   * The cap bounds how many runs can be open at once; it must never bound how often someone may play.
+   * Closing the app mid-race leaves a run open, so a player who did that five times used to be locked out
+   * of ranked play on a perfectly good account.
+   */
+  it('keeps issuing runs at the cap, abandoning the oldest to make room', async () => {
     const userId = await makeUser('0x4444444444444444444444444444444444444444');
-    for (let i = 0; i < 5; i++) await startRun(db, userId, MONDAY);
-    await expect(startRun(db, userId, MONDAY)).rejects.toMatchObject({ code: 'too_many_open' });
+    const first = await startRun(db, userId, MONDAY);
+    for (let i = 1; i < 5; i++) await startRun(db, userId, new Date(MONDAY.getTime() + i * 1000));
+
+    const sixth = await startRun(db, userId, new Date(MONDAY.getTime() + 5000));
+    expect(sixth.runId).toBeTruthy();
+
+    const mine = await db.select().from(runs).where(eq(runs.userId, userId));
+    expect(mine.filter((row) => row.status === 'started')).toHaveLength(5);
+    const oldest = mine.find((row) => row.id === first.runId)!;
+    expect(oldest.status).toBe('abandoned');
+    expect(oldest.invalidationReason).toBe('abandoned when a newer run was started');
+  });
+
+  it('tells a player their run was closed rather than claiming they already submitted it', async () => {
+    const userId = await makeUser('0x9a99999999999999999999999999999999999999');
+    const abandoned = await startRun(db, userId, MONDAY);
+    for (let i = 1; i <= 5; i++) await startRun(db, userId, new Date(MONDAY.getTime() + i * 1000));
+
+    const { replay } = playTheMap(MONDAY);
+    await expect(
+      submitRun(db, engine, { runId: abandoned.runId, userId, replay }, MONDAY),
+    ).rejects.toMatchObject({ code: 'closed' });
+  });
+
+  it('expires runs whose race has ended, instead of holding a slot for ever', async () => {
+    const userId = await makeUser('0x9b99999999999999999999999999999999999999');
+    const monday = await startRun(db, userId, MONDAY);
+
+    // Tuesday: Monday's competition closed at 00:00 plus its grace, so that run can never be submitted.
+    const tuesday = new Date(MONDAY.getTime() + 24 * 60 * 60 * 1000);
+    const next = await startRun(db, userId, tuesday);
+    expect(next.mapNumber).toBe(2);
+
+    const [stale] = await db.select().from(runs).where(eq(runs.id, monday.runId));
+    expect(stale!.status).toBe('expired');
+    expect(stale!.invalidatedAt).not.toBeNull();
   });
 });
 

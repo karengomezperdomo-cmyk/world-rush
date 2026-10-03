@@ -1,9 +1,11 @@
 import { createHash } from 'node:crypto';
 import {
   and,
+  asc,
   bestScores,
   competitions,
   eq,
+  inArray,
   PG_UNIQUE_VIOLATION,
   pgConstraintName,
   pgErrorCode,
@@ -40,7 +42,13 @@ import {
 /** Largest replay accepted, in bytes. Generous for a few minutes of play; a ceiling against abuse. */
 export const MAX_REPLAY_BYTES = 256 * 1024;
 
-/** How many runs one player may have open at once before being told to finish or abandon them. */
+/**
+ * How many runs one player may have open at once.
+ *
+ * This is a bound on concurrency, not a quota on playing. Leaving a run open is ordinary behaviour — it is
+ * what happens every time someone closes the app mid-race — so the cap is enforced by closing the player's
+ * OLDEST open run rather than by refusing them a new one. See `startRun`.
+ */
 export const MAX_OPEN_RUNS_PER_USER = 5;
 
 export class SubmissionError extends Error {
@@ -55,7 +63,7 @@ export class SubmissionError extends Error {
       | 'ruleset_changed'
       | 'did_not_finish'
       | 'duplicate'
-      | 'too_many_open',
+      | 'closed',
   ) {
     super(message);
     this.name = 'SubmissionError';
@@ -72,23 +80,75 @@ export interface StartedRun {
 }
 
 /**
+ * Closes the player's open runs that can never be submitted again.
+ *
+ * A run whose competition has closed — window plus grace — is not pending, it is finished with. Leaving it
+ * as `started` would mean a player's slots were occupied by yesterday's races. The condition is the
+ * competition's own window rather than an arbitrary stopwatch, so a run is only ever closed once submitting
+ * it has actually become impossible, and a paused game is never killed for taking its time.
+ */
+async function expireUnsubmittableRuns(db: Db, userId: string, now: Date): Promise<void> {
+  await db
+    .update(runs)
+    .set({
+      status: 'expired',
+      invalidatedAt: now,
+      invalidationReason: 'its competition closed before the run was submitted',
+    })
+    .where(
+      and(
+        eq(runs.userId, userId),
+        eq(runs.status, 'started'),
+        // Correlated on purpose: the deadline is per-competition, because `graceSeconds` is a column.
+        sql`exists (select 1 from ${competitions} where ${competitions.id} = ${runs.competitionId} and ${competitions.closesAt} + (${competitions.graceSeconds} * interval '1 second') <= ${now.toISOString()}::timestamptz)`,
+      ),
+    );
+}
+
+/**
+ * Abandons the oldest open runs until a new one fits under the cap.
+ *
+ * The cap used to refuse the new run instead, and that was the wrong way round. Open runs accumulate from
+ * closing the app mid-race, which is normal; once five had piled up the player was locked out of ranked
+ * play on a working account, with nothing to click to clear them. A run nobody submitted is worth less than
+ * the one being started right now, so the old ones give way.
+ *
+ * Each closed run keeps its reason, so "I lost a time" can be answered from the row rather than guessed at.
+ */
+async function makeRoomForANewRun(db: Db, userId: string, now: Date): Promise<void> {
+  const open = await db
+    .select({ id: runs.id })
+    .from(runs)
+    .where(and(eq(runs.userId, userId), eq(runs.status, 'started')))
+    .orderBy(asc(runs.startedAt), asc(runs.id));
+  if (open.length < MAX_OPEN_RUNS_PER_USER) return;
+
+  const surplus = open.slice(0, open.length - MAX_OPEN_RUNS_PER_USER + 1).map((row) => row.id);
+  await db
+    .update(runs)
+    .set({
+      status: 'abandoned',
+      invalidatedAt: now,
+      invalidationReason: 'abandoned when a newer run was started',
+    })
+    .where(inArray(runs.id, surplus));
+}
+
+/**
  * Issues a run.
  *
  * The server stamps the start time from its own clock, and that stamp is what later decides whether the
  * submission is inside the window. A client-supplied start time would let anyone submit yesterday's race
  * tomorrow.
+ *
+ * Starting a run never fails because of earlier unfinished ones: stale runs are closed first, and the
+ * oldest still-open run gives way if the player is already at the cap.
  */
 export async function startRun(db: Db, userId: string, now = new Date()): Promise<StartedRun> {
   const competition = await competitionForDay(db, now);
 
-  // Unfinished runs are normal — people crash, pause, close the app. Unbounded unfinished runs are not.
-  const open = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(runs)
-    .where(and(eq(runs.userId, userId), eq(runs.status, 'started')));
-  if ((open[0]?.count ?? 0) >= MAX_OPEN_RUNS_PER_USER) {
-    throw new SubmissionError('too many runs already open', 'too_many_open');
-  }
+  await expireUnsubmittableRuns(db, userId, now);
+  await makeRoomForANewRun(db, userId, now);
 
   const map = mapForDay(now);
   const inserted = await db
@@ -165,6 +225,16 @@ export async function submitRun(
   // Scoped to the caller: asking about someone else's run must be indistinguishable from asking about one
   // that does not exist.
   if (!run) throw new SubmissionError('run not found', 'not_found');
+  // A closed run and a submitted one are different things to the player, and saying "already submitted"
+  // about a run the server itself closed would be a lie they cannot check.
+  if (run.status === 'abandoned' || run.status === 'expired') {
+    throw new SubmissionError(
+      run.status === 'abandoned'
+        ? 'this run was closed when a newer one was started'
+        : 'this run was closed because its race had ended',
+      'closed',
+    );
+  }
   if (run.status !== 'started') {
     throw new SubmissionError('this run has already been submitted', 'duplicate');
   }
