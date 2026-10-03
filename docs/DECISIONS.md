@@ -565,6 +565,69 @@ So the honest options are to revise the number, or to change the stack — not t
 actually ours. Logged rather than quietly dropped, and no "optimisation" has been done that would make the
 figure look better without making the app faster.
 
+## 1q. Phase 10, part 1 (2026-10-03): the security pass, and what it did NOT fix
+
+Worked through §13's threat model. What was already right: the session (256-bit opaque token, only its SHA-256
+in the database, revocation, sliding **and** absolute expiry, user status re-checked on every resolve), the
+SIWE nonce (single-use, expiring, `domain`/`uri`/`chainId` compared against `APP_ORIGIN`), the dev-login
+harness (`assertDevelopmentOnly` makes it throw outside development), and the leaderboard's own integrity
+work from Phase 7. What follows is what changed.
+
+**A critical advisory was shipping.** `pnpm audit` reported GHSA-vcvr-r3jv-pc5j — remote code execution in
+`next/og`'s ImageResponse, affecting Next >= 16.2.0 < 16.3.6. The app was on **16.3.5**. It does not use
+`next/og`, but "we do not call the vulnerable function" is not a security position when a patch release
+exists. Now on **16.3.8**, and `pnpm audit --prod` is clean.
+
+Two advisories remain, both in the development toolchain and neither reachable by anything deployed:
+`braces` (via `@next/eslint-plugin-next` → `fast-glob` → `micromatch`; **no patched version exists**, and it
+is a stack-exhaustion DoS triggered by deeply nested glob patterns — ours are in our own config) and
+`esbuild` (via `drizzle-kit`'s bundled loader; the flaw is in esbuild's dev server, which `drizzle-kit`
+never starts). CI now runs `pnpm audit --prod` as a **blocking** step and the full audit as a non-blocking
+one: a check that is permanently red is a check everyone learns to ignore.
+
+**`__Host-` on the session cookie.** The prefix is enforced by the browser: a `__Host-…` cookie is only
+stored when it is Secure, path `/` and has no `Domain`, and crucially a page on a *sibling subdomain* cannot
+overwrite it — without it, anything ever hosted at another subdomain can plant a session cookie, which is
+session fixation needing no exploit. It is dropped on plain HTTP, because browsers refuse such cookies and
+local development is `http://localhost`; the rule is a tested function (`lib/cookie-name.ts`) rather than a
+constant, because it genuinely differs per environment. Reads accept **both** names, so deploying this does
+not sign out everyone who is currently logged in.
+
+**A same-origin check on every mutating endpoint**, as a second lock behind `SameSite=Lax`. It accepts both
+`APP_ORIGIN` and the request's own Host, because every Vercel preview deployment has a hostname no
+environment variable can know in advance.
+
+> **It lets a request with NO `Origin` header through, deliberately.** Every browser sends one on a POST, so
+> the cross-site attack always has it; what might not send it is World App's own WebView — and a guard that
+> could silently break the Mini App on the devices this project cannot test until D2b is worse than one with
+> a known, narrow hole. The cookie's `SameSite` attribute still covers that case.
+
+**A content security policy, in report-only mode.** World's documentation does not state what a Mini App's
+CSP may contain — neither the WebView specification nor the documentation index covers CSP, framing or
+cookies (checked 2026-10-03) — so the policy is derived from what the app actually loads. It is **not
+enforced**, because the one place it has to be right is inside World App's WebView on a real phone, which is
+exactly what cannot be tested yet. Enforcing it blind would risk a blank Mini App for every player to close a
+class of attack this app has little surface for. It flips to enforcing after a real device completes sign-in,
+verification and a run with no violation reported — the same gate as D2b.
+
+The policy allows `'wasm-unsafe-eval'` (Box2D is WebAssembly; without it there is no game) and
+`'unsafe-inline'` for scripts (Next's own bootstrap). Removing the latter needs nonces through middleware and
+belongs with the switch to enforcing, not before it.
+
+**The World ID diagnostic logs keys, not values.** It was printing the entire unrecognised verify response;
+that body can carry a nullifier hash. It now logs the sorted key names and the HTTP status, which is what the
+diagnostic was for.
+
+### Not fixed, and not pretended otherwise
+
+- **No rate limiting.** §13 wants a WAF/edge limit plus database quotas. The per-user quotas exist
+  (`MAX_OPEN_RUNS_PER_USER`, replay size caps, single-use nonces); the edge limit does not, because there is
+  no Cloudflare in front of the app and an in-process counter in a serverless function is not a rate limit —
+  it is a counter that resets whenever the platform feels like it. This needs infrastructure, which is an
+  owner decision and a later phase.
+- **CSP is reported, not enforced.** See above. Until then it stops nothing.
+- **D2b is still open**, and three items above are waiting on it.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·

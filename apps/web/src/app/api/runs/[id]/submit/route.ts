@@ -1,6 +1,7 @@
 import { getPhysicsEngine, MAX_REPLAY_BYTES, SubmissionError, submitRun } from '@worldrush/runs';
 import { getDb } from '../../../../../lib/db';
 import { getCurrentSession } from '../../../../../lib/session-cookie';
+import { sameOriginViolation } from '../../../../../lib/same-origin';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,9 @@ const BAD_REQUEST_CODES = new Set(['malformed', 'too_large', 'wrong_map', 'did_n
  * diagnostics — it is never what gets ranked.
  */
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const refused = sameOriginViolation(request);
+  if (refused) return refused;
+
   const session = await getCurrentSession();
   if (!session) return Response.json({ error: 'not signed in' }, { status: 401 });
 

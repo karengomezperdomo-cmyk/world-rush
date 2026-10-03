@@ -2,6 +2,7 @@ import { signWorldIdRequest } from '@worldrush/auth';
 import { z } from 'zod';
 import { getCurrentSession } from '../../../../lib/session-cookie';
 import { getWorldIdConfig, WorldIdNotConfiguredError } from '../../../../lib/world-config';
+import { sameOriginViolation } from '../../../../lib/same-origin';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,9 @@ const bodySchema = z.object({ action: z.string().min(1).max(200) });
 
 /** Step 3 of the IDKit flow: sign an RP context for the client's `<IDKitRequestWidget rp_context={...}>`. */
 export async function POST(request: Request): Promise<Response> {
+  const refused = sameOriginViolation(request);
+  if (refused) return refused;
+
   const session = await getCurrentSession();
   if (!session) return Response.json({ error: 'sign in first' }, { status: 401 });
 

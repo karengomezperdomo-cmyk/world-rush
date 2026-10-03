@@ -2,6 +2,7 @@ import { upsertUserByWallet, verifyWalletAuthCompletion, WalletAuthError } from 
 import { getDb } from '../../../../lib/db';
 import { getServerConfig } from '../../../../lib/server-env';
 import { startSession } from '../../../../lib/session-cookie';
+import { sameOriginViolation } from '../../../../lib/same-origin';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,9 @@ export const dynamic = 'force-dynamic';
  * same generic 401 — never tell an attacker which check failed.
  */
 export async function POST(request: Request): Promise<Response> {
+  const refused = sameOriginViolation(request);
+  if (refused) return refused;
+
   let body: unknown;
   try {
     body = await request.json();

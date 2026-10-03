@@ -1,6 +1,7 @@
 import { startRun, SubmissionError } from '@worldrush/runs';
 import { getDb } from '../../../../lib/db';
 import { getCurrentSession } from '../../../../lib/session-cookie';
+import { sameOriginViolation } from '../../../../lib/same-origin';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,10 @@ export const dynamic = 'force-dynamic';
  * submits. A client-chosen start time would let anyone submit yesterday's race tomorrow, and a client-chosen
  * run id would let them submit against someone else's.
  */
-export async function POST(): Promise<Response> {
+export async function POST(request: Request): Promise<Response> {
+  const refused = sameOriginViolation(request);
+  if (refused) return refused;
+
   const session = await getCurrentSession();
   if (!session) return Response.json({ error: 'not signed in' }, { status: 401 });
 

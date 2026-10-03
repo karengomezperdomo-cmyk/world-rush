@@ -89,7 +89,12 @@ export async function callVerifyEndpoint(
   // TEMPORARY diagnostic (2026-09-26): the first real verify call returned a 200 this parsed as neither
   // success nor error — logging the actual body is the only way to see the real shape without guessing
   // against possibly-stale docs. Remove once the schemas above are confirmed against a real response.
-  console.error('[world-id/verify] unrecognised body:', JSON.stringify(body));
+  // The KEYS, not the body. The shape is what this diagnostic is for; the values can carry a nullifier hash
+  // and whatever else the endpoint decides to return, and a log is the wrong place for any of it.
+  console.error(
+    '[world-id/verify] unrecognised body, keys:',
+    typeof body === 'object' && body !== null ? Object.keys(body).sort().join(',') : typeof body,
+  );
   throw new Error(
     `Unrecognised response from the World ID verify endpoint (HTTP ${response.status}). ` +
       'Its shape may have changed; re-check docs.world.org/api-reference/developer-portal/verify.',

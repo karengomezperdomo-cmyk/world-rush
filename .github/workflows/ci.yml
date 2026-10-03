@@ -32,3 +32,10 @@ jobs:
           # The build needs no secrets; these only satisfy the environment schema during `next build`.
           APP_ENV: development
           NEXT_PUBLIC_APP_ENV: development
+      # Fails the build if anything that SHIPS has a known advisory. Deliberately `--prod`: the development
+      # toolchain has advisories that have no fix (see docs/DECISIONS.md §1q), and a check that is always
+      # red is a check everyone learns to ignore.
+      - run: pnpm audit --prod
+      # Development advisories are worth seeing, not worth blocking on.
+      - run: pnpm audit --audit-level moderate
+        continue-on-error: true

@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { getDb } from '../../../../lib/db';
 import { getCurrentSession } from '../../../../lib/session-cookie';
 import { getWorldIdConfig, WorldIdNotConfiguredError } from '../../../../lib/world-config';
+import { sameOriginViolation } from '../../../../lib/same-origin';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,9 @@ const requestSchema = z
   .passthrough();
 
 export async function POST(request: Request): Promise<Response> {
+  const refused = sameOriginViolation(request);
+  if (refused) return refused;
+
   const session = await getCurrentSession();
   if (!session) return Response.json({ error: 'sign in first' }, { status: 401 });
 
