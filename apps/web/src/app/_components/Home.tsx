@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { avatarFor } from '../../lib/avatar';
+import { dayKey, dayNameKey, mapNameKey, mapTaglineKey } from '../../lib/i18n/map-text';
+import { useTranslation } from '../../lib/i18n/provider';
 import {
   formatCountdown,
   millisecondsUntilNextRace,
@@ -49,6 +51,7 @@ function heroSceneFor(mapId: string): string {
 }
 
 function DayTile({ scheduled }: { scheduled: ScheduledMap }) {
+  const { t } = useTranslation();
   const { map, status } = scheduled;
   const className =
     status === 'today'
@@ -58,18 +61,19 @@ function DayTile({ scheduled }: { scheduled: ScheduledMap }) {
         : status === 'past'
           ? 'tile closed notch'
           : 'tile notch';
-  const label =
+  const label = t(
     status === 'today'
-      ? 'TODAY'
+      ? 'home.today'
       : status === 'locked'
-        ? 'LOCKED'
+        ? 'home.locked'
         : status === 'past'
-          ? 'CLOSED'
-          : 'OPEN';
+          ? 'home.closed'
+          : 'home.open',
+  );
 
   const tile = (
     <div className={className}>
-      <div className="d">{map.day}</div>
+      <div className="d">{t(dayKey(map.day))}</div>
       <div className="th">
         {/* eslint-disable-next-line @next/next/no-img-element -- pixel art, served as-is: Next's optimiser resamples it */}
         <img className="pix" src={thumbnailFor(map.level.id, map.number)} alt="" />
@@ -81,7 +85,7 @@ function DayTile({ scheduled }: { scheduled: ScheduledMap }) {
           </div>
         )}
       </div>
-      <div className="n">MAP {map.number}</div>
+      <div className="n">{t('home.map', { number: map.number })}</div>
       <div className="s">{label}</div>
     </div>
   );
@@ -92,7 +96,7 @@ function DayTile({ scheduled }: { scheduled: ScheduledMap }) {
     <Link
       className="tile-link"
       href={status === 'today' ? '/play' : `/play?map=${map.number}`}
-      aria-label={`Play map ${map.number}, ${map.name}`}
+      aria-label={t('home.playMapAria', { number: map.number, name: t(mapNameKey(map)) })}
     >
       {tile}
     </Link>
@@ -135,6 +139,7 @@ function HomeSkeleton() {
 }
 
 export function Home({ session }: { session: HomeSession }) {
+  const { t, locale } = useTranslation();
   // Rendered on the client from a clock that starts at mount: a server-rendered "now" would be wrong by the
   // time it reached the phone, and would not match on hydration.
   const [now, setNow] = useState<Date | null>(null);
@@ -151,7 +156,7 @@ export function Home({ session }: { session: HomeSession }) {
   const week = weekSchedule(now);
   // World's Mini App guidelines say to "Display usernames instead of wallet addresses", so a missing
   // username falls back to a neutral word rather than to 0x7f49 — which is the address, just shortened.
-  const displayName = session.username ?? 'RIDER';
+  const displayName = session.username ?? t('common.rider');
 
   return (
     <div className="screen">
@@ -179,19 +184,19 @@ export function Home({ session }: { session: HomeSession }) {
           {/* eslint-disable-next-line @next/next/no-img-element -- pixel art, must not be resampled */}
           <img className="pix" src={heroSceneFor(today.level.id)} alt="" />
           <div className="hero-copy">
-            <div className="kicker">TODAY&apos;S RACE</div>
+            <div className="kicker">{t('home.todaysRace')}</div>
             <div className="day">
               <Icon name="calendar" />
-              {DAY_NAMES[today.day]}
+              {t(dayNameKey(today.day))}
             </div>
-            <div className="map-no">MAP {today.number}</div>
-            <div className="map-name">{today.name.toUpperCase()}</div>
-            <p className="blurb">{today.tagline}</p>
+            <div className="map-no">{t('home.map', { number: today.number })}</div>
+            <div className="map-name">{t(mapNameKey(today))}</div>
+            <p className="blurb">{t(mapTaglineKey(today))}</p>
           </div>
           <div className="clock notch">
             <Icon name="clock" />
             <div>
-              <div className="l">RACE ENDS IN</div>
+              <div className="l">{t('home.raceEndsIn')}</div>
               <div className="t">{formatCountdown(millisecondsUntilNextRace(now))}</div>
             </div>
           </div>
@@ -201,27 +206,27 @@ export function Home({ session }: { session: HomeSession }) {
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <use href="#play" />
             </svg>
-            PLAY NOW
+            {t('home.playNow')}
           </Link>
           <Link className="btn btn-secondary notch" href="/leaderboard">
             <Icon name="bars" className="i" />
-            VIEW LEADERBOARD
+            {t('home.viewLeaderboard')}
           </Link>
         </div>
       </section>
 
       <section className="week-head">
         <div>
-          <h2>THIS WEEK</h2>
-          <div className="dates">{weekRangeLabel(now)}</div>
+          <h2>{t('home.thisWeek')}</h2>
+          <div className="dates">{weekRangeLabel(now, locale)}</div>
         </div>
         <div className="trophy-chip notch">
           <Icon name="trophy" />
           <div>
-            7 MAPS · 7 DAYS
+            {t('home.sevenMapsSevenDays')}
             <br />
             {/* The mock said "1 CHAMPION". There is no weekly title (A5 parked), so it says what there is. */}
-            <b>7 LEADERBOARDS</b>
+            <b>{t('home.sevenLeaderboards')}</b>
           </div>
         </div>
       </section>
@@ -236,13 +241,3 @@ export function Home({ session }: { session: HomeSession }) {
     </div>
   );
 }
-
-const DAY_NAMES: Record<string, string> = {
-  MON: 'MONDAY',
-  TUE: 'TUESDAY',
-  WED: 'WEDNESDAY',
-  THU: 'THURSDAY',
-  FRI: 'FRIDAY',
-  SAT: 'SATURDAY',
-  SUN: 'SUNDAY',
-};

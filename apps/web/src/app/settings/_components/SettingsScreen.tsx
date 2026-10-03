@@ -93,10 +93,10 @@ export function SettingsScreen() {
       router.push('/');
       router.refresh();
     } catch {
-      setError('Could not sign out. Check your connection and try again.');
+      setError(t('settings.signOutFailed'));
       setSigningOut(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   if (!settings) return <div className="screen" />;
 
@@ -104,8 +104,8 @@ export function SettingsScreen() {
     <div className="screen">
       <div className="page">
         <div className="title-row">
-          <h1>SETTINGS</h1>
-          <p>MAKE IT FEEL RIGHT</p>
+          <h1>{t('settings.title')}</h1>
+          <p>{t('settings.strapline')}</p>
         </div>
 
         <div className="section-label">{t('settings.language')}</div>
@@ -141,32 +141,32 @@ export function SettingsScreen() {
           </div>
         </div>
 
-        <div className="section-label">SOUND</div>
+        <div className="section-label">{t('settings.sound')}</div>
         <div className="set-group notch">
           <Toggle
-            label="Sound effects"
-            detail="Engine, checkpoints, crashes and the finish"
+            label={t('settings.soundEffects')}
+            detail={t('settings.soundEffectsDetail')}
             checked={settings.soundEffects}
             onChange={(next) => update('soundEffects', next)}
           />
           <Toggle
-            label="Music"
+            label={t('settings.music')}
             checked={settings.music}
             onChange={(next) => update('music', next)}
           />
         </div>
 
-        <div className="section-label">CONTROLS</div>
+        <div className="section-label">{t('settings.controls')}</div>
         <div className="set-group notch">
           <Toggle
-            label="Vibration"
-            detail="Feedback on checkpoints, crashes and the finish. Only inside World App."
+            label={t('settings.vibration')}
+            detail={t('settings.vibrationDetail')}
             checked={settings.vibration}
             onChange={(next) => update('vibration', next)}
           />
           <Toggle
-            label="Swap sides"
-            detail="Gas and brake on the left"
+            label={t('settings.swapSides')}
+            detail={t('settings.swapSidesDetail')}
             checked={settings.swapSides}
             onChange={(next) => update('swapSides', next)}
           />
@@ -174,16 +174,18 @@ export function SettingsScreen() {
 
         {/* The sound and control settings above are this device's and work signed out, so the screen is
             reachable either way — but it must not claim an account that is not there. */}
-        <div className="section-label">ACCOUNT</div>
+        <div className="section-label">{t('settings.account')}</div>
         <div className="set-group notch">
           {session?.authenticated ? (
             <>
               <div className="set-row">
                 <div>
                   {/* World's guidelines: show the username, never the wallet address. */}
-                  <div className="t">{session.username ?? 'Signed in'}</div>
+                  <div className="t">{session.username ?? t('settings.signedIn')}</div>
                   <div className="d">
-                    {session.humanVerified ? 'Verified human' : 'Not verified as human yet'}
+                    {session.humanVerified
+                      ? t('settings.verifiedHuman')
+                      : t('settings.notVerified')}
                   </div>
                 </div>
                 {session.humanVerified && (
@@ -196,10 +198,8 @@ export function SettingsScreen() {
               </div>
               <div className="set-row">
                 <div>
-                  <div className="t">Sign out</div>
-                  <div className="d">
-                    Ends your RUSH 7 session. Your World App account is untouched.
-                  </div>
+                  <div className="t">{t('settings.signOut')}</div>
+                  <div className="d">{t('settings.signOutDetail')}</div>
                 </div>
                 <button
                   className="btn btn-secondary notch set-action"
@@ -207,15 +207,15 @@ export function SettingsScreen() {
                   onClick={() => void signOut()}
                   disabled={signingOut}
                 >
-                  {signingOut ? 'SIGNING OUT…' : 'SIGN OUT'}
+                  {signingOut ? t('settings.signingOut') : t('settings.signOutAction')}
                 </button>
               </div>
             </>
           ) : (
             <div className="set-row">
               <div>
-                <div className="t">Not signed in</div>
-                <div className="d">Sign in from the home screen to record times.</div>
+                <div className="t">{t('settings.notSignedIn')}</div>
+                <div className="d">{t('settings.notSignedInDetail')}</div>
               </div>
             </div>
           )}
@@ -228,12 +228,12 @@ export function SettingsScreen() {
           )}
         </div>
 
-        <div className="section-label">ABOUT</div>
+        <div className="section-label">{t('settings.about')}</div>
         <div className="set-group notch">
           <div className="set-row">
             <div>
               <div className="t">{BRAND.name}</div>
-              <div className="d">Version 0.1.0 · provisional art and copy</div>
+              <div className="d">{t('settings.version', { version: '0.1.0' })}</div>
             </div>
           </div>
         </div>

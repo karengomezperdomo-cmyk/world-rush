@@ -3,6 +3,9 @@
 import { mapByNumber } from '@worldrush/game-core';
 import { useCallback, useEffect, useState } from 'react';
 import { avatarFor } from '../../../lib/avatar';
+import { mapNameKey } from '../../../lib/i18n/map-text';
+import type { MessageKey } from '../../../lib/i18n/messages';
+import { useTranslation } from '../../../lib/i18n/provider';
 import { formatCountdown, millisecondsUntilNextRace } from '../../../lib/schedule';
 import { formatRunTime } from '../../../lib/run-time';
 import { Icon } from '../../_components/IconSprite';
@@ -56,16 +59,24 @@ interface Board {
 /** Times arrive in milliseconds; `formatRunTime` works in simulation ticks. */
 const TICKS_PER_MS = 60 / 1000;
 
-const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+const DAY_LABELS = [
+  'day.mon',
+  'day.tue',
+  'day.wed',
+  'day.thu',
+  'day.fri',
+  'day.sat',
+  'day.sun',
+] as const satisfies readonly MessageKey[];
 const DAY_NAMES = [
-  'MONDAY',
-  'TUESDAY',
-  'WEDNESDAY',
-  'THURSDAY',
-  'FRIDAY',
-  'SATURDAY',
-  'SUNDAY',
-] as const;
+  'dayName.mon',
+  'dayName.tue',
+  'dayName.wed',
+  'dayName.thu',
+  'dayName.fri',
+  'dayName.sat',
+  'dayName.sun',
+] as const satisfies readonly MessageKey[];
 
 /** `YYYY-MM-DD` of the UTC day — the same key the API takes, so no timezone maths travels in a URL. */
 function dayKey(date: Date): string {
@@ -81,12 +92,13 @@ function weekdayIndex(day: string): number {
 /**
  * Counts, grouped the way the screen's own language groups them.
  *
- * Pinned to en-US rather than the device's locale: every word around the number is English, so a phone set
- * to Spanish would otherwise render "3.421 RACERS", which reads as three point four in the sentence it sits
- * in. When Spanish arrives (A6) the number and the words change together, not separately.
+ * Keyed to the UI's locale, not the device's. It used to be pinned to en-US, because every word around the
+ * number was English and a Spanish phone rendered "3.421 RACERS" — which reads as three-point-four in that
+ * sentence. Now that the sentence itself is Spanish, "3.421 PILOTOS" is simply how Spanish writes it, and
+ * the number and the words change together, as that note said they would.
  */
-function formatCount(value: number): string {
-  return value.toLocaleString('en-US');
+function formatCount(value: number, locale: string): string {
+  return value.toLocaleString(locale);
 }
 
 /** A gap in seconds, as the mock writes it: `+0.633`. */
@@ -178,6 +190,7 @@ function BoardSkeleton() {
 }
 
 export function Leaderboard() {
+  const { t, plural, locale } = useTranslation();
   const [day, setDay] = useState<string | null>(null);
   const [board, setBoard] = useState<Board | null>(null);
   const [failed, setFailed] = useState(false);
@@ -217,11 +230,11 @@ export function Leaderboard() {
     <div className="screen">
       <div className="page">
         <div className="title-row">
-          <h1>LEADERBOARD</h1>
+          <h1>{t('leaderboard.title')}</h1>
           <p>
             {board
-              ? `MAP ${board.mapNumber} · ${map?.name.toUpperCase() ?? ''} · ${DAY_NAMES[weekdayIndex(board.day)]}`
-              : 'THIS WEEK'}
+              ? `${t('home.map', { number: board.mapNumber })} · ${map ? t(mapNameKey(map)) : ''} · ${t(DAY_NAMES[weekdayIndex(board.day)]!)}`
+              : t('leaderboard.thisWeek')}
           </p>
         </div>
 
@@ -237,14 +250,16 @@ export function Leaderboard() {
                   // A day that has not started has no board to look at yet, so it is shown but not offered.
                   disabled={tab.status === 'upcoming'}
                   aria-current={selected ? 'true' : undefined}
-                  aria-label={`${DAY_NAMES[weekdayIndex(tab.day)]}, map ${tab.mapNumber}`}
+                  aria-label={`${t(DAY_NAMES[weekdayIndex(tab.day)]!)}, ${t('home.map', { number: tab.mapNumber })}`}
                   onClick={() => setDay(tab.day)}
                 >
-                  {DAY_LABELS[weekdayIndex(tab.day)]}
+                  {t(DAY_LABELS[weekdayIndex(tab.day)]!)}
                   {tab.status === 'upcoming' ? (
                     <Icon name="lock" className="i" />
                   ) : (
-                    <small>{tab.status === 'live' ? 'LIVE' : 'FINAL'}</small>
+                    <small>
+                      {tab.status === 'live' ? t('leaderboard.liveShort') : t('leaderboard.final')}
+                    </small>
                   )}
                 </button>
               );
@@ -258,19 +273,19 @@ export function Leaderboard() {
               <>
                 <span className="live frozen">
                   <i />
-                  FINAL
+                  {t('leaderboard.final')}
                 </span>
-                <span>THIS BOARD NO LONGER CHANGES</span>
+                <span>{t('leaderboard.noLongerChanges')}</span>
               </>
             ) : (
               <>
                 <span className="live">
                   <i />
-                  LIVE
+                  {t('leaderboard.live')}
                 </span>
                 {isToday && (
                   <span>
-                    FREEZES IN <b style={{ color: 'var(--text)' }}>{endsIn}</b>
+                    {t('leaderboard.freezesIn')} <b style={{ color: 'var(--text)' }}>{endsIn}</b>
                   </span>
                 )}
               </>
@@ -284,15 +299,15 @@ export function Leaderboard() {
               <Icon name="alert" />
             </div>
             <div>
-              <h3>COULD NOT LOAD THE BOARD</h3>
-              <p>Check your connection and try again.</p>
+              <h3>{t('leaderboard.loadFailed')}</h3>
+              <p>{t('leaderboard.loadFailedDetail')}</p>
               <button
                 className="btn btn-secondary notch"
                 type="button"
                 style={{ marginTop: 10 }}
                 onClick={() => void load(day)}
               >
-                TRY AGAIN
+                {t('common.tryAgain')}
               </button>
             </div>
           </div>
@@ -306,11 +321,15 @@ export function Leaderboard() {
               <Icon name="flag" />
             </div>
             <div>
-              <h3>{board.status === 'final' ? 'NOBODY FINISHED' : 'NOBODY HAS FINISHED YET'}</h3>
+              <h3>
+                {board.status === 'final'
+                  ? t('leaderboard.nobodyFinished')
+                  : t('leaderboard.nobodyYet')}
+              </h3>
               <p>
                 {board.status === 'final'
-                  ? 'No verified time was set on this map before the day ended.'
-                  : 'No verified time has been set on this map. The first one could be yours.'}
+                  ? t('leaderboard.nobodyFinishedDetail')
+                  : t('leaderboard.nobodyYetDetail')}
               </p>
             </div>
           </div>
@@ -333,7 +352,7 @@ export function Leaderboard() {
                     <span className="nm">
                       {entry.username ?? 'RIDER'}
                       {entry.humanVerified && <HumanBadge />}
-                      {entry.isYou && <span className="you-tag">YOU</span>}
+                      {entry.isYou && <span className="you-tag">{t('leaderboard.you')}</span>}
                     </span>
                     <span className="tmc">
                       <div className="tm">{formatRunTime(entry.timeMs * TICKS_PER_MS)}</div>
@@ -347,8 +366,9 @@ export function Leaderboard() {
             )}
 
             <div className="foot-note">
-              {formatCount(board.totalPlayers)} {board.totalPlayers === 1 ? 'RACER' : 'RACERS'} ·
-              ONE BEST TIME EACH
+              {plural(board.totalPlayers, 'leaderboard.racers', {
+                count: formatCount(board.totalPlayers, locale),
+              })}
             </div>
           </>
         )}
@@ -360,13 +380,17 @@ export function Leaderboard() {
               <span className="rk">{board.you.rank}</span>
               <Avatar name={null} />
               <span className="nm">
-                YOU<span className="you-tag">YOU</span>
+                {t('leaderboard.you')}
+                <span className="you-tag">{t('leaderboard.you')}</span>
               </span>
               <span className="tmc">
                 <div className="tm">{formatRunTime(board.you.timeMs * TICKS_PER_MS)}</div>
                 {board.you.behindMs !== null && (
                   <div className="gap">
-                    {(board.you.behindMs / 1000).toFixed(3)} BEHIND #{board.you.rank - 1}
+                    {t('leaderboard.behind', {
+                      gap: (board.you.behindMs / 1000).toFixed(3),
+                      rank: board.you.rank - 1,
+                    })}
                   </div>
                 )}
               </span>

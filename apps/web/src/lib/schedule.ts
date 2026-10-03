@@ -97,15 +97,18 @@ export function formatCountdown(milliseconds: number): string {
 
 /**
  * The Monday-to-Sunday range containing `now`, as `SEP 15 – SEP 21`, for the Home screen's week header.
+ *
+ * The month name follows the language on screen rather than the device, so it matches the words beside it:
+ * a Spanish screen reads `SEPT 15`, not `SEP 15` in the middle of Spanish.
  * Deliberately a date range and not "WEEK 1": see the note about A3 above.
  */
-export function weekRangeLabel(now: Date): string {
+export function weekRangeLabel(now: Date, locale = 'en'): string {
   const dayOfWeek = raceDayOfWeek(now);
   const monday = new Date(now);
   monday.setUTCDate(monday.getUTCDate() - (dayOfWeek - 1));
   const sunday = new Date(monday);
   sunday.setUTCDate(sunday.getUTCDate() + 6);
   const format = (date: Date) =>
-    `${date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase()} ${date.getUTCDate()}`;
+    `${date.toLocaleString(locale, { month: 'short', timeZone: 'UTC' }).toUpperCase()} ${date.getUTCDate()}`;
   return `${format(monday)} – ${format(sunday)}`;
 }
