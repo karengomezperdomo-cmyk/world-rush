@@ -70,8 +70,11 @@ export interface HostedDb {
 export function createHostedDb(options: {
   databaseUrl: string;
   maxConnections?: number;
+  /** Extra driver options. Used by the test harness to pin a connection's `search_path` to one schema. */
+  driverOptions?: Omit<postgres.Options<Record<string, never>>, 'max' | 'onnotice'>;
 }): HostedDb {
   const client = postgres(options.databaseUrl, {
+    ...options.driverOptions,
     max: options.maxConnections ?? 1,
     // The default would silently coerce; failing loudly is the house style for anything schema-shaped.
     onnotice: () => {},

@@ -651,6 +651,39 @@ it never sees a request.
 - **CSP is reported, not enforced.** See above. Until then it stops nothing.
 - **D2b is still open**, and three items above are waiting on it.
 
+## 1r. Phase 11 (2026-10-03): concurrency, and being honest about which half is tested
+
+**A real finding, from the first test written.** Eight simultaneous `startRun` calls leave **eight** runs
+open against a cap of five: they all read the open-run list before any of them inserts, so each concludes
+there is room and none abandons anything. The cap was never a bound under concurrency — only under
+sequential use — and nothing had said so.
+
+It is left as it is, deliberately. The cap is hygiene: unfinished runs are ordinary, since Phase 7 a new run
+abandons the oldest instead of being refused, so overshooting costs a few rows and the very next start brings
+the count back down (the test asserts exactly that). Making it a hard bound means locking the player's row on
+every run start — a real cost on the hot path to defend a number that is not a security boundary. The code
+comment and the test now both say "soft bound" instead of implying otherwise.
+
+### The embedded database cannot test half of this, so CI runs a real one
+
+PGlite is a single connection. Two transactions can never be in flight at once, which means
+`select … for update` (how `finalizeCompetition` is made safe), deadlock handling and commit ordering are not
+merely untested there — **they cannot happen**. Interleaving with `Promise.all` still reproduces the
+orderings that produce duplicate rows and lost updates, because both callers genuinely read before either
+writes, and that is what `races.test.ts` covers: one competition per day under a three-way collision, the
+open-run overshoot, and the personal best keeping the faster of two overlapping submissions.
+
+So `createTestDb` now has two engines. `TEST_DATABASE_URL` unset means PGlite, as before. Set, it builds a
+private schema on a real PostgreSQL server with its own migration bookkeeping, a pool of five connections,
+and drops the schema afterwards. Tests that need true locking are written with `describe.skipIf` — skipped
+rather than deleted, because a skipped test says "not covered here" while a missing one says nothing.
+
+CI gained a second job that runs the whole suite against `postgres:18-alpine`.
+
+> **This job has never run.** There is no Docker and no PostgreSQL on the development machine, so the real-
+> server path is written and typechecked but unexercised; its first CI run is its verification. Written down
+> here because "we test against real Postgres" would otherwise read as a fact from the moment it is merged.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·

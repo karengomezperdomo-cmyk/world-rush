@@ -39,3 +39,43 @@ jobs:
       # Development advisories are worth seeing, not worth blocking on.
       - run: pnpm audit --audit-level moderate
         continue-on-error: true
+
+  # The same suite again, against a real PostgreSQL server.
+  #
+  # The everyday run uses PGlite, which is one connection: two transactions can never be in flight at once,
+  # so `select … for update`, deadlock handling and commit ordering are not merely untested there — they
+  # cannot happen. This job is where those paths are actually exercised. It is a separate job so a failure
+  # says which engine failed, and so the fast feedback from `check` does not wait for a container to boot.
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          # No password at all, rather than a throwaway one written into the repository. The container is
+          # reachable only from this job's own network namespace, and a committed `user:password@host` URL
+          # is exactly what the secret guard refuses - correctly, since nobody reads the reason later.
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: worldrush_test
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+        env:
+          # Set => `createTestDb` builds a private schema on this server instead of starting PGlite.
+          TEST_DATABASE_URL: postgres://postgres@localhost:5432/worldrush_test
+          APP_ENV: development
+          NEXT_PUBLIC_APP_ENV: development

@@ -48,6 +48,12 @@ export const MAX_REPLAY_BYTES = 256 * 1024;
  * This is a bound on concurrency, not a quota on playing. Leaving a run open is ordinary behaviour — it is
  * what happens every time someone closes the app mid-race — so the cap is enforced by closing the player's
  * OLDEST open run rather than by refusing them a new one. See `startRun`.
+ *
+ * **It is a soft bound.** Simultaneous starts all read the open list before any of them inserts, so each
+ * concludes there is room and none abandons anything: `races.test.ts` fires eight at once and ends with
+ * eight open. That is left as it is deliberately — the cap is hygiene, overshooting costs a few rows, and
+ * the next start brings the count back down. Turning it into a hard bound means locking the player's row on
+ * every run start, which is a real cost on the hot path for a number that is not a security boundary.
  */
 export const MAX_OPEN_RUNS_PER_USER = 5;
 
