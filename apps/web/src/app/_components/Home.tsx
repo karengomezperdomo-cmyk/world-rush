@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { avatarFor } from '../../lib/avatar';
 import {
   formatCountdown,
   millisecondsUntilNextRace,
@@ -119,7 +120,7 @@ export function Home({ session }: { session: HomeSession }) {
         <img className="logo pix" src="/art/logo/rush7.png" alt="RUSH 7" />
         <div className="user-chip notch">
           {/* eslint-disable-next-line @next/next/no-img-element -- pixel art, must not be resampled */}
-          <img className="avatar pix" src="/art/avatars/a3.png" alt="" />
+          <img className="avatar pix" src={avatarFor(session.username)} alt="" />
           <span className="user-name">{displayName}</span>
           {session.humanVerified && (
             // PLACEHOLDER: World's review guidelines require their official "human" badge asset next to

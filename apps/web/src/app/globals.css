@@ -430,74 +430,27 @@ body {
   color: var(--muted);
 }
 
-.screen .lb-row.pinned {
-  margin-top: 10px;
-  --nb: var(--green);
-}
-
-/* The week's seven days, as tabs. Seven across a 360px phone leaves ~44px each, so each one is a stacked
-   day/map pair rather than a word, and the map number is what tells two Mondays apart at a glance. */
-.screen .lb-days {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin: 12px 18px 0;
-}
-
-.screen .lb-day {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 0 5px;
-  background: var(--panel);
-  --nb: var(--line-3);
-  color: var(--muted);
+/* The day picker, the live row and the podium are the mock's own styles in `design/screens.css`. Only these
+   are missing there, because the mock never drew a finished board or made the day picker a real button. */
+.screen .dp {
   cursor: pointer;
 }
 
-.screen .lb-day .d {
-  font: 400 8px var(--font-label);
-  letter-spacing: 0.06em;
-}
-
-.screen .lb-day .m {
-  font: 400 15px/1 var(--font-display);
-  color: var(--text);
-}
-
-.screen .lb-day.on {
-  background: #10204e;
-  --nb: var(--gold);
-  color: var(--gold);
-}
-
-.screen .lb-day.on .m {
-  color: var(--gold);
-}
-
-/* A day that has not started yet: shown, so the week reads as seven days, but plainly not available. */
-.screen .lb-day.ahead {
-  opacity: 0.4;
+.screen .dp:disabled {
   cursor: default;
 }
 
-/* Whether this board can still change. FINAL means the ranks are written down, not just that time passed. */
-.screen .lb-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 10px 18px 0;
-  padding: 6px 8px;
-  background: var(--panel);
-  --nb: var(--line-3);
-  font: 400 9px var(--font-label);
-  letter-spacing: 0.08em;
-  color: var(--muted);
+/* FINAL is not an alarm and not a live signal: a board that has stopped changing reads as gold, not green. */
+.screen .live.frozen {
+  color: var(--gold);
 }
 
-.screen .lb-state svg {
-  width: 12px;
-  height: 12px;
+.screen .live.frozen i {
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold);
+}
+
+/* The mock's pinned row sits flush under the list, with the green 'me' treatment doing the highlighting. */
+.screen .lb.pinned {
+  margin-top: 10px;
 }

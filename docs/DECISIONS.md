@@ -518,6 +518,53 @@ simply refuses every caller (503 with no secret configured, 401 on a wrong one, 
   turning it off is now a one-line decision — but it is the owner's, and it costs the ability to playtest six
   of the seven maps on any given day.
 
+## 1p. Phase 9, part 1 (2026-10-02): the leaderboard against its mock, and the load budget measured
+
+The board screen was a list; `design/screens/leaderboard.html` is a screen. It now follows the mock — the day
+picker, the LIVE row with FREEZES IN, a podium for the top three, avatars, gaps to the leader, the
+"N RACERS · ONE BEST TIME EACH" footer, and the pinned row for a player ranked below the page.
+
+Three things deliberately depart from the mock, each because reproducing it would state something untrue:
+
+- **The mock locks every day but today.** Here a past day is openable: it has a board, and seven boards a
+  week is the shape of the game. Only days that have not started are locked.
+- **The mock puts a "human" badge on every row.** It is now drawn per player from `users.humanVerifiedAt`,
+  because ranking does not require verification (A2 chose that it should; it is not enforced), so a badge on
+  every line would be a claim about people the server never checked.
+- **Avatars are a hash of the player's name**, from the eight bundled ones. World profile pictures are not
+  fetched anywhere and `users.avatarUrl` is never written. They are decoration; the hash exists so the same
+  player keeps the same face rather than flickering between renders.
+
+Numbers are formatted as en-US rather than with the device's locale, because every word around them is
+English: a Spanish phone was rendering "3.421 RACERS", which reads as three-point-four-two-one in that
+sentence. When Spanish arrives (A6), the number and the words change together.
+
+The server grew two honest fields for this: per-entry `humanVerified`, and `you.behindMs` — the gap to the
+player **directly ahead**, which is the number that says what moving up would take, read with one extra row
+rather than one extra page.
+
+### The load budget, measured (production build, 2026-10-02)
+
+§14 proposed "≤ 150 KB gzip for the Home shell, without the game". The real figure, from the production
+build's own chunk list for `/`:
+
+| What                                              | gzip   |
+| ------------------------------------------------- | ------ |
+| React + Next framework (two shared chunks)        | 127 KB |
+| MiniKit                                           | 35 KB  |
+| Our own app code for Home (page, layout, helpers) | 23 KB  |
+| **Home first load, modern browser**               | **185 KB** |
+| Legacy polyfills (`noModule`, modern browsers skip them) | 38 KB |
+
+**The budget is missed, and not by something that can be deleted.** 127 KB is Next's own floor and 35 KB is
+MiniKit, which `providers.tsx` installs as early as possible on purpose — World's docs (§2.8-9 of the docs
+review) warn that commands fired right after mount race MiniKit's install, so deferring it to save weight
+would trade a documented correctness problem for 35 KB. Our own code is 23 KB of the 185.
+
+So the honest options are to revise the number, or to change the stack — not to shave the 23 KB that is
+actually ours. Logged rather than quietly dropped, and no "optimisation" has been done that would make the
+figure look better without making the app faster.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·

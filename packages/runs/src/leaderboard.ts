@@ -1,4 +1,4 @@
-import { and, asc, bestScores, eq, sql, users, type Db } from '@worldrush/db';
+import { and, asc, bestScores, desc, eq, sql, users, type Db } from '@worldrush/db';
 
 /**
  * Reading a leaderboard.
@@ -16,6 +16,14 @@ export interface LeaderboardEntry {
   readonly userId: string;
   /** World guidelines: show the username, never the wallet address. Null when one is not resolved yet. */
   readonly username: string | null;
+  /**
+   * Whether this player has proved they are a human with World ID.
+   *
+   * Read per row rather than assumed. The mock puts a "human" badge on every line, which would only be
+   * honest if ranking required verification — decision A2 chose that, but it is not enforced yet, so the
+   * badge has to follow the data or it is decoration that makes a claim.
+   */
+  readonly humanVerified: boolean;
   readonly timeMs: number;
   readonly achievedAt: Date;
   readonly isYou: boolean;
@@ -24,8 +32,13 @@ export interface LeaderboardEntry {
 export interface LeaderboardPage {
   readonly entries: LeaderboardEntry[];
   readonly totalPlayers: number;
-  /** The caller's own standing, even when they are far below the visible page. */
-  readonly you: { rank: number; timeMs: number } | null;
+  /**
+   * The caller's own standing, even when they are far below the visible page.
+   *
+   * `behindMs` is the gap to the player directly ahead — the one number that tells someone ranked 128th what
+   * it would actually take to move up. Null when they are first.
+   */
+  readonly you: { rank: number; timeMs: number; behindMs: number | null } | null;
 }
 
 export const LEADERBOARD_PAGE_SIZE = 50;
@@ -43,6 +56,7 @@ export async function readLeaderboard(
       timeMs: bestScores.bestTimeMs,
       achievedAt: bestScores.achievedAt,
       username: users.username,
+      humanVerifiedAt: users.humanVerifiedAt,
     })
     .from(bestScores)
     .innerJoin(users, eq(users.id, bestScores.userId))
@@ -60,6 +74,7 @@ export async function readLeaderboard(
     rank: index + 1,
     userId: row.userId,
     username: row.username,
+    humanVerified: row.humanVerifiedAt !== null,
     timeMs: row.timeMs,
     achievedAt: row.achievedAt,
     isYou: row.userId === options.viewerId,
@@ -69,7 +84,12 @@ export async function readLeaderboard(
   if (options.viewerId) {
     const onPage = entries.find((entry) => entry.isYou);
     if (onPage) {
-      you = { rank: onPage.rank, timeMs: onPage.timeMs };
+      const ahead = entries[onPage.rank - 2];
+      you = {
+        rank: onPage.rank,
+        timeMs: onPage.timeMs,
+        behindMs: ahead ? onPage.timeMs - ahead.timeMs : null,
+      };
     } else {
       // Below the visible page: count how many are ahead rather than fetching the whole board, so a player
       // ranked 9,000th costs the same as one ranked 10th.
@@ -96,7 +116,25 @@ export async function readLeaderboard(
               sql`(${bestScores.bestTimeMs}, ${bestScores.achievedAt}, ${bestScores.userId}) < (${score.bestTimeMs}, ${score.achievedAt}, ${score.userId})`,
             ),
           );
-        you = { rank: (ahead[0]?.count ?? 0) + 1, timeMs: score.bestTimeMs };
+        // The player directly ahead, by the board's own ordering. One row, not the whole page above them:
+        // "0.214 behind #127" is the number that says what moving up would take.
+        const inFront = await db
+          .select({ timeMs: bestScores.bestTimeMs })
+          .from(bestScores)
+          .where(
+            and(
+              eq(bestScores.competitionId, competitionId),
+              eq(bestScores.isVisible, true),
+              sql`(${bestScores.bestTimeMs}, ${bestScores.achievedAt}, ${bestScores.userId}) < (${score.bestTimeMs}, ${score.achievedAt}, ${score.userId})`,
+            ),
+          )
+          .orderBy(desc(bestScores.bestTimeMs), desc(bestScores.achievedAt), desc(bestScores.userId))
+          .limit(1);
+        you = {
+          rank: (ahead[0]?.count ?? 0) + 1,
+          timeMs: score.bestTimeMs,
+          behindMs: inFront[0] ? score.bestTimeMs - inFront[0].timeMs : null,
+        };
       }
     }
   }

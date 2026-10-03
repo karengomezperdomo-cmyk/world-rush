@@ -241,7 +241,8 @@ export function FinishOverlay({
               <span className="v green">
                 #{verification.time.rank}{' '}
                 <small style={{ fontSize: 12, color: 'var(--muted)' }}>
-                  / {verification.time.totalPlayers.toLocaleString()}
+                  {/* en-US, like every word around it: a Spanish phone would otherwise write 3.421. */}/{' '}
+                  {verification.time.totalPlayers.toLocaleString('en-US')}
                 </small>
               </span>
             </div>

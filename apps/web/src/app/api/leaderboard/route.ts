@@ -64,6 +64,7 @@ export async function GET(request: Request): Promise<Response> {
       rank: entry.rank,
       // World's guidelines: show the username, never the wallet address.
       username: entry.username,
+      humanVerified: entry.humanVerified,
       timeMs: entry.timeMs,
       isYou: entry.isYou,
     })),

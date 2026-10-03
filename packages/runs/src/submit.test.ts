@@ -337,7 +337,11 @@ describe('the leaderboard', () => {
     const board = await readLeaderboard(db, competition.id, { viewerId: late });
     expect(board.entries.map((entry) => entry.userId)).toEqual([quicker, early, late]);
     expect(board.totalPlayers).toBe(3);
-    expect(board.you).toEqual({ rank: 3, timeMs: 45_000 });
+    // Third place is a second behind second place — the number that says what moving up would take, and
+    // zero here because the two tied times differ only in who got there first.
+    expect(board.you).toEqual({ rank: 3, timeMs: 45_000, behindMs: 0 });
+    // Nobody in this test verified with World ID, so no row may claim they did.
+    expect(board.entries.every((entry) => entry.humanVerified)).toBe(false);
   });
 
   it('tells a player their rank even when they are below the visible page', async () => {
@@ -369,8 +373,43 @@ describe('the leaderboard', () => {
     const board = await readLeaderboard(db, competition.id, { viewerId: ids[5]!, limit: 3 });
     expect(board.entries).toHaveLength(3);
     expect(board.entries.some((entry) => entry.isYou)).toBe(false);
-    // Counted rather than fetched: being 9,000th must cost the same as being 10th.
-    expect(board.you).toEqual({ rank: 6, timeMs: 45_000 });
+    // Counted rather than fetched: being 9,000th must cost the same as being 10th. The gap is to the player
+    // directly ahead (44,000 ms), not to the leader, and is read with one more row, not one more page.
+    expect(board.you).toEqual({ rank: 6, timeMs: 45_000, behindMs: 1_000 });
+  });
+
+  it('marks the players who proved they are human, and only those', async () => {
+    const competition = await competitionForDay(db, MONDAY);
+    const verified = await makeUser('0x3030999999999999999999999999999999999999');
+    const anonymous = await makeUser('0x4040aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+    await db
+      .update(users)
+      .set({ humanVerifiedAt: MONDAY })
+      .where(eq(users.id, verified));
+
+    for (const [index, userId] of [verified, anonymous].entries()) {
+      const [run] = await db
+        .insert(runs)
+        .values({
+          userId,
+          competitionId: competition.id,
+          ruleset: competition.ruleset,
+          status: 'valid',
+          durationMs: 40_000 + index * 1000,
+          completedAt: MONDAY,
+        })
+        .returning();
+      await db.insert(bestScores).values({
+        competitionId: competition.id,
+        userId,
+        bestTimeMs: 40_000 + index * 1000,
+        runId: run!.id,
+        achievedAt: MONDAY,
+      });
+    }
+
+    const board = await readLeaderboard(db, competition.id);
+    expect(board.entries.map((entry) => entry.humanVerified)).toEqual([true, false]);
   });
 
   it('shows nothing for a player who has not set a time', async () => {

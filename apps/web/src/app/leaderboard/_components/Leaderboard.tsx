@@ -2,28 +2,32 @@
 
 import { mapByNumber } from '@worldrush/game-core';
 import { useCallback, useEffect, useState } from 'react';
+import { avatarFor } from '../../../lib/avatar';
 import { formatCountdown, millisecondsUntilNextRace } from '../../../lib/schedule';
 import { formatRunTime } from '../../../lib/run-time';
 import { Icon } from '../../_components/IconSprite';
 import { TabBar } from '../../_components/TabBar';
 
 /**
- * The seven boards of the week, one tab per day.
+ * The week's seven boards, following `design/screens/leaderboard.html`: the day picker, the live row, a
+ * podium for the top three and the list under it. Markup keeps the mock's class names so the copied
+ * `screens.css` styles it unchanged.
  *
- * Every time here was computed by the server from the inputs the player pressed, not reported by their
- * device — which is what makes a board worth looking at. Ties go to whoever got there first.
+ * Three things depart from the mock, each because the mock would be saying something untrue:
  *
- * The week is shown in full, including days nobody played and days still to come, because that is the shape
- * of the game the owner chose: seven separate boards, and missing one costs nothing. A screen that only ever
- * showed today would quietly imply the opposite — that a day you skipped is simply gone.
- *
- * A day that has ended says FINAL and never changes again; the server freezes it on the first read after its
- * grace period, so "final" here means the ranks are written down, not merely that the clock has passed.
+ * - The mock locks every day except today. Here a PAST day is openable — it has a board, and seven boards a
+ *   week is the whole shape of the game. Only days that have not started are locked.
+ * - The mock puts a "human" badge on every row. It is drawn per player from World ID, because ranking does
+ *   not require verification yet (decision A2 chose that it should; it is not enforced), so a badge on every
+ *   line would be a claim about people the server has not checked.
+ * - The avatars are a fixed set picked from the player's name, not their World profile picture, which
+ *   nothing fetches yet. They are decoration, which is why the same name always gets the same one.
  */
 
 interface Entry {
   rank: number;
   username: string | null;
+  humanVerified: boolean;
   timeMs: number;
   isYou: boolean;
 }
@@ -44,7 +48,7 @@ interface Board {
   status: 'upcoming' | 'live' | 'final';
   finalizedAt: string | null;
   totalPlayers: number;
-  you: { rank: number; timeMs: number } | null;
+  you: { rank: number; timeMs: number; behindMs: number | null } | null;
   entries: Entry[];
   week: DayTab[];
 }
@@ -63,11 +67,6 @@ const DAY_NAMES = [
   'SUNDAY',
 ] as const;
 
-function medalClass(rank: number, isYou: boolean): string {
-  const medal = rank === 1 ? ' gold' : rank === 2 ? ' silver' : rank === 3 ? ' bronze' : '';
-  return `lb-row${medal}${isYou ? ' me' : ''}`;
-}
-
 /** `YYYY-MM-DD` of the UTC day — the same key the API takes, so no timezone maths travels in a URL. */
 function dayKey(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -77,6 +76,74 @@ function dayKey(date: Date): string {
 function weekdayIndex(day: string): number {
   const utcDay = new Date(`${day}T00:00:00.000Z`).getUTCDay();
   return utcDay === 0 ? 6 : utcDay - 1;
+}
+
+/**
+ * Counts, grouped the way the screen's own language groups them.
+ *
+ * Pinned to en-US rather than the device's locale: every word around the number is English, so a phone set
+ * to Spanish would otherwise render "3.421 RACERS", which reads as three point four in the sentence it sits
+ * in. When Spanish arrives (A6) the number and the words change together, not separately.
+ */
+function formatCount(value: number): string {
+  return value.toLocaleString('en-US');
+}
+
+/** A gap in seconds, as the mock writes it: `+0.633`. */
+function formatGap(milliseconds: number): string {
+  return `+${(milliseconds / 1000).toFixed(3)}`;
+}
+
+function HumanBadge() {
+  // PLACEHOLDER: World's review guidelines require their official "human" badge asset next to usernames.
+  // This pill stands in for it and must be replaced unmodified, not restyled.
+  return (
+    <span className="human notch">
+      <Icon name="ring" className="i" />
+      human
+    </span>
+  );
+}
+
+function Avatar({ name, size }: { name: string | null; size?: number }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- pixel art, must not be resampled
+    <img
+      className="avatar pix"
+      src={avatarFor(name)}
+      alt=""
+      style={size === undefined ? undefined : { width: size, height: size }}
+    />
+  );
+}
+
+function Podium({ entries }: { entries: Entry[] }) {
+  const [first, second, third] = entries;
+  if (!first) return null;
+  // The mock's order is 2 · 1 · 3, so the winner stands in the middle and taller.
+  return (
+    <div className="podium" style={{ paddingTop: 28 }}>
+      {second ? <PodiumPlace entry={second} place={2} /> : <div />}
+      <PodiumPlace entry={first} place={1} />
+      {third ? <PodiumPlace entry={third} place={3} /> : <div />}
+    </div>
+  );
+}
+
+function PodiumPlace({ entry, place }: { entry: Entry; place: 1 | 2 | 3 }) {
+  return (
+    <div className={`pod p${place} notch`}>
+      {place === 1 ? (
+        <Icon name="crown" className="i crown" />
+      ) : (
+        <i className="medal">{place}</i>
+      )}
+      <Avatar name={entry.username} size={place === 1 ? 48 : 36} />
+      <div className="nm">{entry.username ?? 'RIDER'}</div>
+      <div className="tm">{formatRunTime(entry.timeMs * TICKS_PER_MS)}</div>
+      {entry.humanVerified && <HumanBadge />}
+    </div>
+  );
 }
 
 export function Leaderboard() {
@@ -102,16 +169,18 @@ export function Leaderboard() {
   }, [day, load]);
 
   // Only the day that is actually being raced has a deadline worth counting down.
+  const isToday = board?.day === dayKey(new Date());
   useEffect(() => {
-    if (board?.status !== 'live' || board.day !== dayKey(new Date())) return;
+    if (board?.status !== 'live' || !isToday) return;
     const update = () => setEndsIn(formatCountdown(millisecondsUntilNextRace(new Date())));
     update();
     const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
-  }, [board?.status, board?.day]);
+  }, [board?.status, isToday]);
 
   const map = board ? mapByNumber(board.mapNumber) : undefined;
-  const riders = `${board?.totalPlayers.toLocaleString() ?? '0'} ${board?.totalPlayers === 1 ? 'RIDER' : 'RIDERS'}`;
+  const leaderMs = board?.entries[0]?.timeMs ?? null;
+  const rest = board?.entries.slice(3) ?? [];
 
   return (
     <div className="screen">
@@ -120,28 +189,32 @@ export function Leaderboard() {
           <h1>LEADERBOARD</h1>
           <p>
             {board
-              ? `${DAY_NAMES[weekdayIndex(board.day)]} · MAP ${board.mapNumber} · ${map?.name.toUpperCase() ?? ''}`
+              ? `MAP ${board.mapNumber} · ${map?.name.toUpperCase() ?? ''} · ${DAY_NAMES[weekdayIndex(board.day)]}`
               : 'THIS WEEK'}
           </p>
         </div>
 
         {board && (
-          <div className="lb-days">
+          <div className="day-picker">
             {board.week.map((tab) => {
               const selected = tab.day === board.day;
-              const className = `lb-day notch${selected ? ' on' : ''}${tab.status === 'upcoming' ? ' ahead' : ''}`;
               return (
                 <button
                   key={tab.day}
                   type="button"
-                  className={className}
+                  className={`dp notch${selected ? ' on' : ''}${tab.status === 'upcoming' ? ' locked' : ''}`}
                   // A day that has not started has no board to look at yet, so it is shown but not offered.
                   disabled={tab.status === 'upcoming'}
                   aria-current={selected ? 'true' : undefined}
+                  aria-label={`${DAY_NAMES[weekdayIndex(tab.day)]}, map ${tab.mapNumber}`}
                   onClick={() => setDay(tab.day)}
                 >
-                  <span className="d">{DAY_LABELS[weekdayIndex(tab.day)]}</span>
-                  <span className="m">{tab.mapNumber}</span>
+                  {DAY_LABELS[weekdayIndex(tab.day)]}
+                  {tab.status === 'upcoming' ? (
+                    <Icon name="lock" className="i" />
+                  ) : (
+                    <small>{tab.status === 'live' ? 'LIVE' : 'FINAL'}</small>
+                  )}
                 </button>
               );
             })}
@@ -149,21 +222,26 @@ export function Leaderboard() {
         )}
 
         {board && (
-          <div className="lb-state notch">
+          <div className="live-row">
             {board.status === 'final' ? (
               <>
-                <Icon name="check" />
-                FINAL · {riders}
-              </>
-            ) : board.day === dayKey(new Date()) ? (
-              <>
-                <Icon name="clock" />
-                LIVE · {riders} · ENDS IN {endsIn}
+                <span className="live frozen">
+                  <i />
+                  FINAL
+                </span>
+                <span>THIS BOARD NO LONGER CHANGES</span>
               </>
             ) : (
               <>
-                <Icon name="clock" />
-                LIVE · {riders}
+                <span className="live">
+                  <i />
+                  LIVE
+                </span>
+                {isToday && (
+                  <span>
+                    FREEZES IN <b style={{ color: 'var(--text)' }}>{endsIn}</b>
+                  </span>
+                )}
               </>
             )}
           </div>
@@ -177,6 +255,14 @@ export function Leaderboard() {
             <div>
               <h3>COULD NOT LOAD THE BOARD</h3>
               <p>Check your connection and try again.</p>
+              <button
+                className="btn btn-secondary notch"
+                type="button"
+                style={{ marginTop: 10 }}
+                onClick={() => void load(day)}
+              >
+                TRY AGAIN
+              </button>
             </div>
           </div>
         )}
@@ -200,33 +286,60 @@ export function Leaderboard() {
         )}
 
         {board && board.entries.length > 0 && (
-          <div className="lb notch">
-            {board.entries.map((entry) => (
-              <div className={medalClass(entry.rank, entry.isYou)} key={`${entry.rank}-${entry.username ?? ''}`}>
-                <span className="rk">{entry.rank}</span>
-                {/* World's guidelines: usernames, never wallet addresses. */}
-                <span className="nm">
-                  {entry.username ?? 'RIDER'}
-                  {entry.isYou && <span className="you-tag">YOU</span>}
-                </span>
-                <span className="tmc">
-                  <span className="tm">{formatRunTime(entry.timeMs * TICKS_PER_MS)}</span>
-                </span>
+          <>
+            <Podium entries={board.entries} />
+
+            {rest.length > 0 && (
+              <div className="lb notch">
+                {rest.map((entry) => (
+                  <div
+                    className={entry.isYou ? 'lb-row me' : 'lb-row'}
+                    key={`${entry.rank}-${entry.username ?? ''}`}
+                  >
+                    <span className="rk">{entry.rank}</span>
+                    <Avatar name={entry.username} />
+                    {/* World's guidelines: usernames, never wallet addresses. */}
+                    <span className="nm">
+                      {entry.username ?? 'RIDER'}
+                      {entry.humanVerified && <HumanBadge />}
+                      {entry.isYou && <span className="you-tag">YOU</span>}
+                    </span>
+                    <span className="tmc">
+                      <div className="tm">{formatRunTime(entry.timeMs * TICKS_PER_MS)}</div>
+                      {leaderMs !== null && entry.timeMs > leaderMs && (
+                        <div className="gap">{formatGap(entry.timeMs - leaderMs)}</div>
+                      )}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+
+            <div className="foot-note">
+              {formatCount(board.totalPlayers)} {board.totalPlayers === 1 ? 'RACER' : 'RACERS'} · ONE
+              BEST TIME EACH
+            </div>
+          </>
         )}
 
         {/* Shown when the player is ranked below the visible page, so they always know where they stand. */}
         {board?.you && !board.entries.some((entry) => entry.isYou) && (
-          <div className="lb-row pinned notch">
-            <span className="rk">{board.you.rank}</span>
-            <span className="nm">
-              YOU<span className="you-tag">YOU</span>
-            </span>
-            <span className="tmc">
-              <span className="tm">{formatRunTime(board.you.timeMs * TICKS_PER_MS)}</span>
-            </span>
+          <div className="lb pinned notch" style={{ margin: 0 }}>
+            <div className="lb-row me">
+              <span className="rk">{board.you.rank}</span>
+              <Avatar name={null} />
+              <span className="nm">
+                YOU<span className="you-tag">YOU</span>
+              </span>
+              <span className="tmc">
+                <div className="tm">{formatRunTime(board.you.timeMs * TICKS_PER_MS)}</div>
+                {board.you.behindMs !== null && (
+                  <div className="gap">
+                    {(board.you.behindMs / 1000).toFixed(3)} BEHIND #{board.you.rank - 1}
+                  </div>
+                )}
+              </span>
+            </div>
           </div>
         )}
       </div>
