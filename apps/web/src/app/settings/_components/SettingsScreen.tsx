@@ -3,6 +3,9 @@
 import { BRAND } from '@worldrush/shared';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { LOCALES } from '../../../lib/i18n/locale';
+import { LANGUAGE_NAMES } from '../../../lib/i18n/messages';
+import { useTranslation } from '../../../lib/i18n/provider';
 import { readSettings, writeSetting, type Settings } from '../../../lib/settings';
 import { Icon } from '../../_components/IconSprite';
 import { TabBar } from '../../_components/TabBar';
@@ -57,6 +60,7 @@ function Toggle({
 
 export function SettingsScreen() {
   const router = useRouter();
+  const { t, locale, automatic, setLocale } = useTranslation();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -102,6 +106,39 @@ export function SettingsScreen() {
         <div className="title-row">
           <h1>SETTINGS</h1>
           <p>MAKE IT FEEL RIGHT</p>
+        </div>
+
+        <div className="section-label">{t('settings.language')}</div>
+        <div className="set-group notch">
+          <div className="set-row">
+            <div>
+              <div className="t">{t('settings.language')}</div>
+              <div className="d">{t('settings.languageDetail')}</div>
+            </div>
+            <div className="lang-picker">
+              {/* AUTO is not a language: it hands the choice back to the phone's own setting, which is what
+                  World's guidelines say to follow. It is listed first because it is the default. */}
+              <button
+                type="button"
+                className={automatic ? 'lang on notch' : 'lang notch'}
+                aria-pressed={automatic}
+                onClick={() => setLocale(null)}
+              >
+                {t('settings.languageAuto')}
+              </button>
+              {LOCALES.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={!automatic && locale === option ? 'lang on notch' : 'lang notch'}
+                  aria-pressed={!automatic && locale === option}
+                  onClick={() => setLocale(option)}
+                >
+                  {LANGUAGE_NAMES[option]}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="section-label">SOUND</div>

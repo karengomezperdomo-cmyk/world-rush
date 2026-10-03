@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import type { MessageKey } from '../../lib/i18n/messages';
+import { useTranslation } from '../../lib/i18n/provider';
 import { useOnline } from '../../lib/online';
 import { Icon, type IconName } from './IconSprite';
 
@@ -15,19 +17,20 @@ import { Icon, type IconName } from './IconSprite';
 
 const TABS: readonly {
   readonly id: string;
-  readonly label: string;
+  readonly label: MessageKey;
   readonly icon: IconName;
   readonly href?: string;
   readonly note?: string;
 }[] = [
-  { id: 'home', label: 'HOME', icon: 'home', href: '/' },
-  { id: 'leaderboard', label: 'LEADERBOARD', icon: 'trophy', href: '/leaderboard' },
-  { id: 'how', label: 'HOW TO PLAY', icon: 'help', href: '/how-to-play' },
-  { id: 'settings', label: 'SETTINGS', icon: 'gear', href: '/settings' },
+  { id: 'home', label: 'tabs.home', icon: 'home', href: '/' },
+  { id: 'leaderboard', label: 'tabs.leaderboard', icon: 'trophy', href: '/leaderboard' },
+  { id: 'how', label: 'tabs.howToPlay', icon: 'help', href: '/how-to-play' },
+  { id: 'settings', label: 'tabs.settings', icon: 'gear', href: '/settings' },
 ];
 
 export function TabBar({ active }: { active: string }) {
   const online = useOnline();
+  const { t } = useTranslation();
   return (
     <>
       {/* Said once, where every screen already looks: without a connection the game still plays, but nothing
@@ -35,7 +38,7 @@ export function TabBar({ active }: { active: string }) {
           not queued for later. */}
       {!online && (
         <p className="offline-strip notch" role="status">
-          OFFLINE · YOU CAN STILL RIDE, BUT NO TIME WILL BE RANKED
+          {t('offline.strip')}
         </p>
       )}
       <nav className="tabbar">
@@ -48,12 +51,12 @@ export function TabBar({ active }: { active: string }) {
               aria-current={tab.id === active ? 'page' : undefined}
             >
               <Icon name={tab.icon} />
-              {tab.label}
+              {t(tab.label)}
             </Link>
           ) : (
             <span key={tab.id} className="tab" aria-disabled="true" title={tab.note}>
               <Icon name={tab.icon} />
-              {tab.label}
+              {t(tab.label)}
             </span>
           ),
         )}
