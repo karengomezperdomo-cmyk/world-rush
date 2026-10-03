@@ -39,16 +39,15 @@ export function mapForDay(at: Date): MapEntry {
   return map;
 }
 
-export interface CompetitionRow {
-  id: string;
-  mapSlug: string;
-  levelFingerprint: string;
-  ruleset: string;
-  opensAt: Date;
-  closesAt: Date;
-  graceSeconds: number;
-  status: string;
-}
+/**
+ * A competition row, taken from the schema rather than restated here.
+ *
+ * It used to be a hand-written subset, which is how `participantsCount`, `winnerTimeMs` and `finalizedAt`
+ * came to be invisible to everything that reads a competition even though the table has always had them.
+ * Deriving it means a column added to the table is a column this package can see, and one removed from it
+ * fails to compile here instead of at runtime.
+ */
+export type CompetitionRow = typeof competitions.$inferSelect;
 
 /**
  * The competition for a given day, created on first use.

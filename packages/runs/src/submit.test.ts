@@ -1,5 +1,5 @@
 import Box2DFactory from 'box2d3-wasm';
-import { bestScores, eq, runs, users } from '@worldrush/db';
+import { bestScores, competitions, eq, runs, users } from '@worldrush/db';
 import { createTestDb } from '@worldrush/db/testing';
 import {
   createBikeSimulation,
@@ -403,5 +403,25 @@ describe('the submission window', () => {
   it('refuses a run that started after the competition closed', () => {
     const startedAt = new Date('2026-10-06T00:00:30Z');
     expect(submissionWindowOpen(competition, startedAt, new Date('2026-10-06T00:00:40Z'))).toBe(false);
+  });
+
+  /**
+   * The guard against the one ordering the window alone does not cover: a submission arriving while the
+   * board is being frozen. A score added after the ranks were written would sit on a final board without a
+   * final rank.
+   */
+  it('refuses a submission into a board that has already been frozen', async () => {
+    const userId = await makeUser('0x9c99999999999999999999999999999999999999');
+    const { replay } = playTheMap(MONDAY);
+    const started = await startRun(db, userId, MONDAY);
+
+    await db
+      .update(competitions)
+      .set({ status: 'finalized', finalizedAt: MONDAY })
+      .where(eq(competitions.id, started.competitionId));
+
+    await expect(
+      submitRun(db, engine, { runId: started.runId, userId, replay }, MONDAY),
+    ).rejects.toMatchObject({ code: 'window_closed' });
   });
 });

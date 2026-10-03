@@ -478,6 +478,46 @@ issued run's map against the one on screen and says "ONLY TODAY'S MAP HAS A LEAD
 Verified by playing: today's map ridden to the line in the browser returns **VERIFIED BY THE SERVER** with a
 real rank, and eight consecutive `POST /api/runs/start` now return 200 where the sixth used to return 409.
 
+## 1o. Phase 8 (2026-10-02): the calendar is real, and a finished board is frozen
+
+Phase 7 left every leaderboard permanently live: a day's board was an ordered query, so yesterday's ranking
+was still being recomputed today, and a score hidden by moderation months later would silently renumber a
+race that ended in October. Phase 8 closes days.
+
+**Freezing happens on read, not on a schedule.** `finalizeCompetition` locks the competition row, writes
+every visible score's `finalRank`, and records how many played and what won. The first person to look at a
+finished board pays for it; everyone after sees the same frozen answer. This is deliberate and it is the
+reason `/api/cron/finalize` is an optimisation rather than a dependency: Vercel's Hobby plan runs cron at
+most once a day with up to an hour of imprecision (§3), so a design that only froze a board when a job fired
+would leave yesterday's race live for an unpredictable stretch of today.
+
+**Reading a board never creates one.** `competitionForDay` creates on demand — right for starting a run,
+wrong for a public URL — so the read paths use `findCompetition`/`competitionForReading` instead. Without
+that split, anyone could fill the table with competitions for days nobody played by walking a date parameter
+backwards through the calendar.
+
+**The leaderboard screen is now the week.** Seven tabs, MON–SUN, each with its map number; a finished day
+says FINAL and an unfinished one LIVE with the countdown. Days nobody played are shown, empty, because the
+owner's rule is that missing a day costs nothing — a screen that hid those days would say the opposite. Days
+still to come are visible but not selectable: there is no board to look at yet.
+
+`CompetitionRow` is now derived from the schema (`typeof competitions.$inferSelect`) rather than hand-written.
+It had been a subset, which is how `participantsCount`, `winnerTimeMs` and `finalizedAt` came to be invisible
+to every reader although the table always had them.
+
+**New optional env var `CRON_SECRET`** (at least 16 characters). Optional everywhere, production included:
+nothing's correctness depends on the job, so a deployment without it must still boot — `/api/cron/finalize`
+simply refuses every caller (503 with no secret configured, 401 on a wrong one, compared in constant time).
+
+### Still open after Phase 8
+
+- **Enabling the cron job on Vercel** needs the owner: a `CRON_SECRET` in the project's environment and a
+  schedule entry. Not done, not assumed. The game is correct without it.
+- **A3b** (the start date of week 1) is unchanged: the Home header still shows a date range, not "WEEK 1".
+- **`ALL_MAPS_OPEN_FOR_TESTING` is still on** (§1l). Phase 8 built the daily calendar the flag overrides, so
+  turning it off is now a one-line decision — but it is the owner's, and it costs the ability to playtest six
+  of the seven maps on any given day.
+
 ## 2. Defaults in force (no objection recorded)
 
 A4 grace of 120 s for runs already in progress at closing time · A6 languages EN + ES (i18n from day one) ·

@@ -21,6 +21,15 @@ const serverEnvSchema = z.object({
     .optional(),
   /** Provided by Vercel itself; used only to cross-check APP_ENV. */
   VERCEL_ENV: z.enum(['production', 'preview', 'development']).optional(),
+  /**
+   * Shared secret the scheduled-jobs endpoint requires (Vercel sends it as `Authorization: Bearer …`).
+   *
+   * Deliberately OPTIONAL even in production: nothing about the game's correctness depends on a job running
+   * (`packages/runs/src/finalize.ts`), so a deployment without it must boot normally — the endpoint simply
+   * refuses every caller. Making it required would turn "we have not set up cron yet" into "the site will
+   * not start".
+   */
+  CRON_SECRET: z.string().min(16, { error: 'CRON_SECRET must be at least 16 characters' }).optional(),
   RANKED_ENABLED: flag,
   REWARDS_ENABLED: flag,
   NOTIFICATIONS_ENABLED: flag,
@@ -32,6 +41,8 @@ export interface ServerConfig {
   databaseUrl: string | undefined;
   /** Falls back to "http://localhost:3000" in development when unset; required otherwise. */
   appOrigin: string;
+  /** Secret the scheduled-jobs endpoint checks. Undefined means no job may run; see the schema. */
+  cronSecret: string | undefined;
   /** Feature flags. All default to OFF; enabling any of them requires explicit approval. */
   flags: { ranked: boolean; rewards: boolean; notifications: boolean };
 }
@@ -100,6 +111,7 @@ export function parseServerEnv(source: Readonly<Record<string, string | undefine
     isProduction: env.APP_ENV === 'production',
     databaseUrl: env.DATABASE_URL,
     appOrigin: env.APP_ORIGIN ?? 'http://localhost:3000',
+    cronSecret: env.CRON_SECRET,
     flags: {
       ranked: env.RANKED_ENABLED,
       rewards: env.REWARDS_ENABLED,

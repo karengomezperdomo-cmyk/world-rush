@@ -247,6 +247,12 @@ export async function submitRun(
   const competition = competitionRows[0] as CompetitionRow | undefined;
   if (!competition) throw new SubmissionError('competition not found', 'not_found');
 
+  // A frozen board has its ranks written down (`finalize.ts`); accepting a time into it afterwards would
+  // add a score the final ranking never counted. Checked as well as the window, not instead of it: the
+  // window is the rule, this is the guard against a submission landing while the board is being frozen.
+  if (competition.status === 'finalized' || competition.status === 'cancelled') {
+    throw new SubmissionError('this race has been closed', 'window_closed');
+  }
   if (!submissionWindowOpen(competition, run.startedAt, now)) {
     throw new SubmissionError('the window for this competition has closed', 'window_closed');
   }

@@ -127,6 +127,31 @@ describe('parseServerEnv', () => {
     });
   });
 
+  describe('CRON_SECRET', () => {
+    // Optional on purpose: nothing's correctness depends on the job running, so a deployment without it
+    // must still boot. See the schema and `packages/runs/src/finalize.ts`.
+    it('is optional in production', () => {
+      const config = parseServerEnv({
+        APP_ENV: 'production',
+        NEXT_PUBLIC_APP_ENV: 'production',
+        VERCEL_ENV: 'production',
+        DATABASE_URL: hosted,
+        APP_ORIGIN: origin,
+      });
+      expect(config.cronSecret).toBeUndefined();
+    });
+
+    it('refuses a short one rather than accepting a guessable secret', () => {
+      expect(issuesOf({ ...dev, CRON_SECRET: 'short' })).toEqual([
+        'CRON_SECRET: CRON_SECRET must be at least 16 characters',
+      ]);
+    });
+
+    it('passes a usable one through', () => {
+      expect(parseServerEnv({ ...dev, CRON_SECRET: 'a'.repeat(32) }).cronSecret).toBe('a'.repeat(32));
+    });
+  });
+
   it('refuses secret-like NEXT_PUBLIC_* variables and never echoes their values', () => {
     const issues = issuesOf({
       ...dev,
