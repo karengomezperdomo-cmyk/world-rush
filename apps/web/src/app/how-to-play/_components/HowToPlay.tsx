@@ -1,6 +1,8 @@
 'use client';
 
 import { ALL_MAPS_OPEN_FOR_TESTING } from '../../../lib/schedule';
+import type { MessageKey } from '../../../lib/i18n/messages';
+import { useTranslation } from '../../../lib/i18n/provider';
 import { Icon, type IconName } from '../../_components/IconSprite';
 import { TabBar } from '../../_components/TabBar';
 
@@ -46,33 +48,32 @@ function Card({
   );
 }
 
-const CONTROLS: readonly { art: string; label: string }[] = [
-  { art: 'gas', label: 'GAS · GO' },
-  { art: 'brake', label: 'BRAKE · STOP' },
-  { art: 'lean-back', label: 'LEAN BACK' },
-  { art: 'lean-forward', label: 'LEAN FWD' },
+const CONTROLS: readonly { art: string; label: MessageKey }[] = [
+  { art: 'gas', label: 'how.gas' },
+  { art: 'brake', label: 'how.brake' },
+  { art: 'lean-back', label: 'how.leanBack' },
+  { art: 'lean-forward', label: 'how.leanForward' },
 ];
 
 export function HowToPlay() {
+  const { t } = useTranslation();
   return (
     <div className="screen">
       <div className="page">
         <div className="title-row">
-          <h1>HOW TO PLAY</h1>
+          <h1>{t('how.title')}</h1>
           {/* The strapline has to agree with the card below it: saying "one map a day" while every map is
               open would contradict the first thing the player reads. */}
-          <p>{ALL_MAPS_OPEN_FOR_TESTING ? 'BEAT THE CLOCK' : 'BEAT THE CLOCK · ONE MAP A DAY'}</p>
+          <p>{t(ALL_MAPS_OPEN_FOR_TESTING ? 'how.strapline' : 'how.straplineDaily')}</p>
         </div>
 
         {ALL_MAPS_OPEN_FOR_TESTING ? (
-          <Card icon="calendar" title="EVERY MAP IS OPEN RIGHT NOW">
-            While the game is being tested, all seven maps can be played whenever you like. Normally
-            one opens each day at 00:00 UTC and its leaderboard freezes when the day ends.
+          <Card icon="calendar" title={t('how.allOpen')}>
+            {t('how.allOpenBody')}
           </Card>
         ) : (
-          <Card icon="calendar" title="ONE MAP EVERY DAY">
-            A new map opens each day at 00:00 UTC. When the day ends, that leaderboard freezes for
-            good.
+          <Card icon="calendar" title={t('how.daily')}>
+            {t('how.dailyBody')}
           </Card>
         )}
 
@@ -82,8 +83,8 @@ export function HowToPlay() {
               <Icon name="gamepad" />
             </div>
             <div>
-              <h3>CONTROLS</h3>
-              <p>Four buttons. Hold to keep them pressed.</p>
+              <h3>{t('how.controls')}</h3>
+              <p>{t('how.controlsBody')}</p>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, width: '100%' }}>
@@ -91,29 +92,26 @@ export function HowToPlay() {
               <div className="ctl notch" key={control.art}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- pixel art, must not be resampled */}
                 <img className="ctl-art pix" src={`/art/controls/${control.art}.png`} alt="" />
-                {control.label}
+                {t(control.label)}
               </div>
             ))}
           </div>
         </div>
 
-        <Card icon="clock" title="YOUR BEST TIME COUNTS">
-          Crash and you respawn at the last checkpoint, with the clock still running. Retry as often
-          as you like — only your fastest run counts.
+        <Card icon="clock" title={t('how.bestTime')}>
+          {t('how.bestTimeBody')}
         </Card>
 
-        <Card icon="ring" title="ONE HUMAN, ONE SPOT">
-          World ID proves you are a real person, so one human gets one place on the board.
+        <Card icon="ring" title={t('how.oneHuman')}>
+          {t('how.oneHumanBody')}
         </Card>
 
-        <Card icon="check" title="THE SERVER TIMES YOUR RUN">
-          Your run sends the buttons you pressed, not the time you got. The server replays them and
-          works the time out itself, so a time only counts once it has been checked.
+        <Card icon="check" title={t('how.serverTimes')}>
+          {t('how.serverTimesBody')}
         </Card>
 
-        <Card icon="trophy" title="SEVEN BOARDS, SEVEN CHANCES" tone="gold">
-          Every day has its own leaderboard, and each one closes for good when the day ends. Miss a
-          day and nothing is lost — you simply are not on that day’s board.
+        <Card icon="trophy" title={t('how.sevenBoards')} tone="gold">
+          {t('how.sevenBoardsBody')}
         </Card>
       </div>
 

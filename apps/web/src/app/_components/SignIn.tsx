@@ -3,6 +3,7 @@
 import { IDKitRequestWidget, proofOfHuman, type RpContext } from '@worldcoin/idkit';
 import { MiniKit } from '@worldcoin/minikit-js';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from '../../lib/i18n/provider';
 
 /**
  * Minimal, functional wiring for Phase 2 (MiniKit wallet-auth + World ID). Not the styled Home screen from
@@ -39,6 +40,7 @@ export function SignIn({
   /** Reports every session read upwards, so the shell can swap to Home the moment sign-in lands. */
   onSession?: (session: SessionState) => void;
 }) {
+  const { t } = useTranslation();
   const [session, setSession] = useState<SessionState | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,14 +56,14 @@ export function SignIn({
 
   useEffect(() => {
     void refreshSession();
-  }, [refreshSession]);
+  }, [refreshSession, t]);
 
   const signIn = useCallback(async () => {
     setBusy(true);
     setError(null);
     try {
       if (!MiniKit.isInstalled()) {
-        setError("Open this inside World App to sign in — MiniKit isn't available here.");
+        setError(t('signIn.needsWorldApp'));
         return;
       }
       const nonceResponse = await fetch('/api/auth/nonce', { method: 'POST' });
@@ -75,11 +77,11 @@ export function SignIn({
       if (!completeResponse.ok) throw new Error('Sign-in could not be verified.');
       await refreshSession();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign-in failed.');
+      setError(err instanceof Error ? err.message : t('signIn.failed'));
     } finally {
       setBusy(false);
     }
-  }, [refreshSession]);
+  }, [refreshSession, t]);
 
   /** Local-only: mints a throwaway session, no wallet and no World ID. */
   const devSignIn = useCallback(async () => {
@@ -94,11 +96,11 @@ export function SignIn({
       if (!response.ok) throw new Error('The local sign-in harness is not available.');
       await refreshSession();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Local sign-in failed.');
+      setError(err instanceof Error ? err.message : t('signIn.devFailed'));
     } finally {
       setBusy(false);
     }
-  }, [refreshSession]);
+  }, [refreshSession, t]);
 
   const signOut = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -114,20 +116,20 @@ export function SignIn({
     });
     if (!response.ok) {
       const body = (await response.json().catch(() => ({}))) as { error?: string };
-      setError(body.error ?? 'World ID is not configured yet.');
+      setError(body.error ?? t('signIn.worldIdUnconfigured'));
       return;
     }
     setRpContext((await response.json()) as RpContext);
     setVerifyOpen(true);
-  }, []);
+  }, [t]);
 
-  if (!session) return <p>Loading…</p>;
+  if (!session) return <p>{t('common.loading')}</p>;
 
   if (!session.authenticated) {
     return (
       <div className="auth-box">
         <button type="button" onClick={() => void signIn()} disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign in with World App'}
+          {busy ? t('signIn.signingIn') : t('signIn.signIn')}
         </button>
         {DEV_LOGIN_AVAILABLE && (
           <>
@@ -137,12 +139,9 @@ export function SignIn({
               onClick={() => void devSignIn()}
               disabled={busy}
             >
-              {busy ? 'Opening…' : 'Skip World App (local only)'}
+              {busy ? t('signIn.devOpening') : t('signIn.devSkip')}
             </button>
-            <p className="dev-login-note">
-              Development build. Mints a throwaway session so the game can be played without World
-              App.
-            </p>
+            <p className="dev-login-note">{t('signIn.devNote')}</p>
           </>
         )}
         {error && <p role="alert">{error}</p>}
@@ -155,13 +154,15 @@ export function SignIn({
       <p>
         {/* World's guidelines: "Display usernames instead of wallet addresses". There is no address to fall
             back to any more - the API does not send one - and a neutral word is the right fallback anyway. */}
-        Signed in as <strong>{session.username ?? 'RIDER'}</strong>
+        {t('signIn.signedInAs')} <strong>{session.username ?? t('common.rider')}</strong>
       </p>
-      <p>Human verified: {session.humanVerified ? 'yes' : 'no'}</p>
+      <p>
+        {t('signIn.humanVerified')} {session.humanVerified ? t('signIn.yes') : t('signIn.no')}
+      </p>
       {!session.humanVerified && worldIdAppId && session.userId && (
         <>
           <button type="button" onClick={() => void startVerify()}>
-            Verify you&apos;re human
+            {t('signIn.verifyButton')}
           </button>
           {rpContext && (
             <IDKitRequestWidget
@@ -184,7 +185,7 @@ export function SignIn({
                 setVerifyOpen(false);
                 void refreshSession();
               }}
-              onError={(errorCode) => setError(`World ID verification failed (${errorCode}).`)}
+              onError={(errorCode) => setError(t('signIn.verifyFailed', { code: errorCode }))}
             />
           )}
         </>

@@ -143,11 +143,12 @@ function Podium({ entries }: { entries: Entry[] }) {
 }
 
 function PodiumPlace({ entry, place }: { entry: Entry; place: 1 | 2 | 3 }) {
+  const { t } = useTranslation();
   return (
     <div className={`pod p${place} notch`}>
       {place === 1 ? <Icon name="crown" className="i crown" /> : <i className="medal">{place}</i>}
       <Avatar name={entry.username} size={place === 1 ? 48 : 36} />
-      <div className="nm">{entry.username ?? 'RIDER'}</div>
+      <div className="nm">{entry.username ?? t('common.rider')}</div>
       <div className="tm">{formatRunTime(entry.timeMs * TICKS_PER_MS)}</div>
       {entry.humanVerified && <HumanBadge />}
     </div>
@@ -350,7 +351,7 @@ export function Leaderboard() {
                     <Avatar name={entry.username} />
                     {/* World's guidelines: usernames, never wallet addresses. */}
                     <span className="nm">
-                      {entry.username ?? 'RIDER'}
+                      {entry.username ?? t('common.rider')}
                       {entry.humanVerified && <HumanBadge />}
                       {entry.isYou && <span className="you-tag">{t('leaderboard.you')}</span>}
                     </span>

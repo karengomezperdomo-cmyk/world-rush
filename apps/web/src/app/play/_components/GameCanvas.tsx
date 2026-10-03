@@ -21,6 +21,8 @@ import { readSettings, SETTINGS_CHANGED_EVENT, type Settings } from '../../../li
 import { startRun as openRun, submitReplay, type SubmissionFailure } from '../../../lib/submission';
 import { dayKey, readBestTicks, recordRun } from '../../../lib/run-record';
 import { runTimeParts } from '../../../lib/run-time';
+import type { MessageKey } from '../../../lib/i18n/messages';
+import { useTranslation } from '../../../lib/i18n/provider';
 import { Icon } from '../../_components/IconSprite';
 import {
   CrashToast,
@@ -45,11 +47,16 @@ import {
  * circular arrows), which said nothing about a motorbike.
  */
 const PADS = [
-  { flag: INPUT.LEAN_BACK, label: 'LEAN BACK', art: 'lean-back', className: 'lean p-back' },
-  { flag: INPUT.LEAN_FORWARD, label: 'LEAN FWD', art: 'lean-forward', className: 'lean p-fwd' },
-  { flag: INPUT.BRAKE, label: 'BRAKE', art: 'brake', className: 'brake p-brake' },
-  { flag: INPUT.GAS, label: 'GAS', art: 'gas', className: 'gas p-gas' },
-] as const;
+  { flag: INPUT.LEAN_BACK, label: 'pad.leanBack', art: 'lean-back', className: 'lean p-back' },
+  {
+    flag: INPUT.LEAN_FORWARD,
+    label: 'pad.leanForward',
+    art: 'lean-forward',
+    className: 'lean p-fwd',
+  },
+  { flag: INPUT.BRAKE, label: 'pad.brake', art: 'brake', className: 'brake p-brake' },
+  { flag: INPUT.GAS, label: 'pad.gas', art: 'gas', className: 'gas p-gas' },
+] as const satisfies readonly { flag: number; label: MessageKey; art: string; className: string }[];
 
 interface FinishSummary {
   readonly ticks: number;
@@ -72,7 +79,18 @@ function requestedMap(): MapEntry | undefined {
 }
 
 export function GameCanvas() {
+  const { t } = useTranslation();
   const router = useRouter();
+  /**
+   * The translator, reachable from the game-start effect without becoming a dependency of it.
+   *
+   * `t` is a new function whenever the language changes, so listing it would tear down the canvas, the
+   * physics world and the audio, and start a fresh run — because somebody switched to Spanish mid-race.
+   * The effect only needs it for one error message, and a ref gives it today's translator without tying the
+   * game's lifetime to the language.
+   */
+  const tRef = useRef(t);
+  tRef.current = t;
   const stageRef = useRef<HTMLDivElement | null>(null);
   const padRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const handleRef = useRef<GameHandle | null>(null);
@@ -266,7 +284,7 @@ export function GameCanvas() {
           if (element) handle?.bindButton(element, pad.flag);
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'The game engine failed to load.');
+        setError(err instanceof Error ? err.message : tRef.current('game.engineFailed'));
       }
     })();
 
@@ -327,14 +345,14 @@ export function GameCanvas() {
           className="round-btn notch"
           type="button"
           onClick={pause}
-          aria-label="Pause"
+          aria-label={t('game.pause')}
           disabled={paused || finish !== null}
         >
           <Icon name="pause" className="i" />
         </button>
         <div>
           <div className="timer notch">
-            <div className="l">{state?.crashed ? 'TIME · STILL RUNNING' : 'TIME'}</div>
+            <div className="l">{t(state?.crashed ? 'game.timeStillRunning' : 'game.time')}</div>
             <div className="t">
               {time.clock}
               <small>{time.millis}</small>
@@ -342,9 +360,9 @@ export function GameCanvas() {
           </div>
           <div className="hud-sub">
             {crashCount > 0 ? (
-              <span className="chip bad notch">CRASH ×{crashCount}</span>
+              <span className="chip bad notch">{t('game.crashCount', { count: crashCount })}</span>
             ) : (
-              <span className="chip notch">CP {reached}</span>
+              <span className="chip notch">{t('game.checkpointChip', { number: reached })}</span>
             )}
             <span className="cp-pips">
               {Array.from({ length: checkpointCount }, (_, index) => (
@@ -383,7 +401,7 @@ export function GameCanvas() {
           player deserves to know which while they can still do something about it. */}
       {unranked !== null && finish === null && (
         <p className="unranked-warning notch" role="status">
-          {UNRANKED_WARNING[unranked]}
+          {t(UNRANKED_WARNING[unranked])}
         </p>
       )}
 
@@ -451,18 +469,20 @@ function PadButton({
   index: number;
   padRefs: React.RefObject<(HTMLButtonElement | null)[]>;
 }) {
+  const { t } = useTranslation();
+  const label = t(pad.label);
   return (
     <button
       type="button"
       className={`pad ${pad.className} notch`}
-      aria-label={pad.label}
+      aria-label={label}
       ref={(element) => {
         padRefs.current[index] = element;
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- pixel art, must not be resampled */}
       <img className="pad-art pix" src={`/art/controls/${pad.art}.png`} alt="" />
-      <span>{pad.label}</span>
+      <span>{label}</span>
     </button>
   );
 }

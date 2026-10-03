@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from '../../lib/i18n/provider';
 import { Home } from './Home';
 import { SignIn } from './SignIn';
 
@@ -32,6 +33,7 @@ interface SessionState {
 type Status = 'loading' | 'ready' | 'unreachable';
 
 export function AppShell({ worldIdAppId }: { worldIdAppId?: `app_${string}` }) {
+  const { t } = useTranslation();
   const [session, setSession] = useState<SessionState | null>(null);
   const [status, setStatus] = useState<Status>('loading');
 
@@ -61,7 +63,7 @@ export function AppShell({ worldIdAppId }: { worldIdAppId?: `app_${string}` }) {
       <main className="shell boot" aria-busy="true">
         {/* eslint-disable-next-line @next/next/no-img-element -- pixel art, must not be resampled */}
         <img className="logo pix" src="/art/logo/rush7.png" alt="RUSH 7" />
-        <p className="boot-note">LOADING…</p>
+        <p className="boot-note">{t('common.loading')}</p>
       </main>
     );
   }
@@ -72,10 +74,10 @@ export function AppShell({ worldIdAppId }: { worldIdAppId?: `app_${string}` }) {
         {/* eslint-disable-next-line @next/next/no-img-element -- pixel art, must not be resampled */}
         <img className="logo pix" src="/art/logo/rush7.png" alt="RUSH 7" />
         <p className="boot-note" role="alert">
-          Could not reach the game. Check your connection.
+          {t('boot.unreachable')}
         </p>
         <button className="btn btn-secondary notch" type="button" onClick={() => void load()}>
-          TRY AGAIN
+          {t('common.tryAgain')}
         </button>
       </main>
     );
