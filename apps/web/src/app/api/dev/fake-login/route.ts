@@ -3,6 +3,7 @@ import { upsertUserByWallet } from '@worldrush/auth';
 import { assertDevelopmentOnly } from '@worldrush/config';
 import { z } from 'zod';
 import { getDb } from '../../../../lib/db';
+import { readJsonBody, SMALL_JSON_BYTES } from '../../../../lib/json-body';
 import { getServerConfig } from '../../../../lib/server-env';
 import { startSession } from '../../../../lib/session-cookie';
 
@@ -30,12 +31,10 @@ function randomWalletAddress(): string {
 export async function POST(request: Request): Promise<Response> {
   assertDevelopmentOnly(getServerConfig().appEnv, 'the fake-login harness');
 
-  let body: unknown = {};
-  try {
-    body = await request.json();
-  } catch {
-    // No body is fine: we mint a random address.
-  }
+  const read = await readJsonBody(request, SMALL_JSON_BYTES);
+  if (read.tooLarge) return read.response;
+  // No body is fine here: a missing or unparsable one just means we mint a random address.
+  const body: unknown = read.value ?? {};
   const parsed = bodySchema.safeParse(body);
   const walletAddress =
     (parsed.success ? parsed.data.walletAddress : undefined) ?? randomWalletAddress();

@@ -1,5 +1,6 @@
 import { upsertUserByWallet, verifyWalletAuthCompletion, WalletAuthError } from '@worldrush/auth';
 import { getDb } from '../../../../lib/db';
+import { readJsonBody, SMALL_JSON_BYTES } from '../../../../lib/json-body';
 import { getServerConfig } from '../../../../lib/server-env';
 import { startSession } from '../../../../lib/session-cookie';
 import { sameOriginViolation } from '../../../../lib/same-origin';
@@ -15,12 +16,12 @@ export async function POST(request: Request): Promise<Response> {
   const refused = sameOriginViolation(request);
   if (refused) return refused;
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
+  const read = await readJsonBody(request, SMALL_JSON_BYTES);
+  if (read.tooLarge) return read.response;
+  if (read.value === undefined) {
     return Response.json({ error: 'invalid JSON body' }, { status: 400 });
   }
+  const body = read.value;
 
   const db = await getDb();
   const { appOrigin } = getServerConfig();
@@ -30,8 +31,9 @@ export async function POST(request: Request): Promise<Response> {
     });
     const user = await upsertUserByWallet(db, walletAddress);
     await startSession(user.id);
+    // Same as `/api/auth/session`: no wallet address goes to the browser. The session cookie is what proves
+    // who this is from here on, and the screens show usernames.
     return Response.json({
-      walletAddress: user.walletAddress,
       username: user.username,
       humanVerified: user.humanVerifiedAt !== null,
     });

@@ -28,7 +28,6 @@ import { TabBar } from './TabBar';
 
 export interface HomeSession {
   username?: string | null;
-  walletAddress?: string;
   humanVerified?: boolean;
 }
 

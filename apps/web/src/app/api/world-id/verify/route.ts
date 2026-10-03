@@ -6,6 +6,7 @@ import {
 import { WORLD_ID_PROTOCOL_VERSIONS } from '@worldrush/shared';
 import { z } from 'zod';
 import { getDb } from '../../../../lib/db';
+import { PROOF_JSON_BYTES, readJsonBody } from '../../../../lib/json-body';
 import { getCurrentSession } from '../../../../lib/session-cookie';
 import { getWorldIdConfig, WorldIdNotConfiguredError } from '../../../../lib/world-config';
 import { sameOriginViolation } from '../../../../lib/same-origin';
@@ -26,12 +27,12 @@ export async function POST(request: Request): Promise<Response> {
   const session = await getCurrentSession();
   if (!session) return Response.json({ error: 'sign in first' }, { status: 401 });
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
+  const read = await readJsonBody(request, PROOF_JSON_BYTES);
+  if (read.tooLarge) return read.response;
+  if (read.value === undefined) {
     return Response.json({ error: 'invalid JSON body' }, { status: 400 });
   }
+  const body = read.value;
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: 'malformed IDKit response' }, { status: 400 });
 

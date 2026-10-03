@@ -27,7 +27,6 @@ const DEV_LOGIN_AVAILABLE = process.env.NEXT_PUBLIC_APP_ENV === 'development';
 interface SessionState {
   authenticated: boolean;
   userId?: string;
-  walletAddress?: string;
   username?: string | null;
   humanVerified?: boolean;
 }
@@ -154,7 +153,9 @@ export function SignIn({
   return (
     <div className="auth-box">
       <p>
-        Signed in as <strong>{session.username ?? session.walletAddress}</strong>
+        {/* World's guidelines: "Display usernames instead of wallet addresses". There is no address to fall
+            back to any more - the API does not send one - and a neutral word is the right fallback anyway. */}
+        Signed in as <strong>{session.username ?? 'RIDER'}</strong>
       </p>
       <p>Human verified: {session.humanVerified ? 'yes' : 'no'}</p>
       {!session.humanVerified && worldIdAppId && session.userId && (

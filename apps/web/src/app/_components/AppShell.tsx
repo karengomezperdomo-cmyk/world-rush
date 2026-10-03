@@ -7,7 +7,6 @@ import { SignIn } from './SignIn';
 interface SessionState {
   authenticated: boolean;
   userId?: string;
-  walletAddress?: string;
   username?: string | null;
   humanVerified?: boolean;
 }

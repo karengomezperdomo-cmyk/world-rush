@@ -618,6 +618,29 @@ belongs with the switch to enforcing, not before it.
 that body can carry a nullifier hash. It now logs the sorted key names and the HTTP status, which is what the
 diagnostic was for.
 
+### Part 2 (same day): what the endpoints accept, and what they give back
+
+**Every JSON body now has a ceiling.** `await request.json()` has none: it buffers whatever arrives, before
+any authentication can reject it, which on a serverless function is a cheap way for a stranger to spend the
+app's memory. `readJsonBody` checks the advertised `Content-Length` first (so an oversized upload is refused
+before it is read) and then counts the bytes as they arrive, because that header is the caller's word — a
+test covers exactly that case, a small declared length with a large body. 16 KB for sign-in, signing and the
+dev harness; 64 KB for a World ID proof. The replay endpoint already had its own cap from Phase 7.
+
+**The API no longer hands out wallet addresses.** `/api/auth/session` and `/api/auth/complete` were returning
+the caller's own address. It is their own, so this was not a leak — but nothing on any screen used it (World's
+guidelines say to show usernames), so it existed only as a copy of an identifier in a browser's memory, logs
+and screenshots. The one place that rendered it, the sign-in box's "Signed in as", fell back to the raw
+address when a username was missing; it now says RIDER, like the Home screen already did. §13's privacy row
+("the API does not return wallets") is true now; before today it was not.
+
+Audited and left alone: `/api/health` (names variables, never values), `/api/leaderboard` (no user ids — a
+decision from Phase 7 that still holds), the SIWE rejection path (every failure is the same generic 401, so
+nothing tells an attacker which check failed), and the query layer. On that last one, precisely: every
+statement that touches request data is parameterised through Drizzle, and the single `sql.raw` in the
+codebase builds `CHECK (… in (…))` constraints out of compile-time constants from `@worldrush/shared` —
+it never sees a request.
+
 ### Not fixed, and not pretended otherwise
 
 - **No rate limiting.** §13 wants a WAF/edge limit plus database quotas. The per-user quotas exist
