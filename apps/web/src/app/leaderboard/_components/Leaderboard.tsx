@@ -142,6 +142,41 @@ function PodiumPlace({ entry, place }: { entry: Entry; place: 1 | 2 | 3 }) {
   );
 }
 
+/**
+ * The board's shape while it is being fetched.
+ *
+ * It replaces the word "Loading…", which told the player nothing and moved the whole screen down when the
+ * real rows arrived. These boxes are the sizes of the things that are coming — the day picker, the podium,
+ * six rows — so the layout is already settled when the data lands. Nothing here is invented data: empty
+ * frames, never a placeholder name or a made-up time.
+ */
+function BoardSkeleton() {
+  return (
+    <div aria-busy="true">
+      <div className="day-picker">
+        {Array.from({ length: 7 }, (_, index) => (
+          <div className="dp notch skeleton" key={index} style={{ height: 40 }} />
+        ))}
+      </div>
+      <div className="podium" style={{ paddingTop: 28 }}>
+        <div className="pod p2 notch skeleton" />
+        <div className="pod p1 notch skeleton" />
+        <div className="pod p3 notch skeleton" />
+      </div>
+      <div className="lb notch">
+        {Array.from({ length: 6 }, (_, index) => (
+          <div className="lb-row" key={index}>
+            <span className="rk skeleton" style={{ height: 20 }} />
+            <span className="skeleton" style={{ width: 28, height: 28 }} />
+            <span className="nm skeleton" style={{ height: 16 }} />
+            <span className="tmc skeleton" style={{ width: 86, height: 20 }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Leaderboard() {
   const [day, setDay] = useState<string | null>(null);
   const [board, setBoard] = useState<Board | null>(null);
@@ -263,7 +298,7 @@ export function Leaderboard() {
           </div>
         )}
 
-        {!board && !failed && <p className="lb-empty">Loading…</p>}
+        {!board && !failed && <BoardSkeleton />}
 
         {board && board.entries.length === 0 && (
           <div className="card notch">

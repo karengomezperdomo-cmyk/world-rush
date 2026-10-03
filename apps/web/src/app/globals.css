@@ -453,6 +453,43 @@ body {
   margin-top: 10px;
 }
 
+/* Placeholders for content that is one frame away. They carry the real sizes so nothing jumps when the data
+   lands, and they are deliberately empty: a grey box is honest, an invented name shown as real is not.
+   The pulse is a hint that something is coming, and it stops for anyone who asked for less motion. */
+.skeleton {
+  background: #0d1836;
+  color: transparent;
+  border-radius: 2px;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton > * {
+  visibility: hidden;
+}
+
+/* A placeholder must not wear the winner's gold border: an empty box drawn as first place pulls the eye to
+   a result that does not exist yet. Every skeleton gets the same neutral edge. */
+.skeleton,
+.skeleton.pod.p1 {
+  --nb: var(--line-3);
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
 /* Sits directly above the tab bar, which is 60px tall plus the safe area. Fixed for the same reason the tab
    bar is (see the override above): `.screen` is as tall as its content, so an absolutely positioned strip
    would land at the bottom of a scrolling page instead of on screen. Out of flow so that a connection

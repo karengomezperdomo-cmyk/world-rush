@@ -100,6 +100,41 @@ function DayTile({ scheduled }: { scheduled: ScheduledMap }) {
   );
 }
 
+/**
+ * What the screen looks like for the one frame before the clock exists.
+ *
+ * Everything on Home depends on the date — which map is today's, which days are closed, how long is left —
+ * and the date has to come from the player's own device after mount: a server-rendered "now" is already
+ * stale when it lands on the phone, and would not match on hydration. That left a blank screen on every
+ * open, which reads as a slow app.
+ *
+ * So the layout is drawn first and the contents arrive a frame later. The boxes are the real sizes, so
+ * nothing moves when the data appears; what they are NOT is fake data. An empty frame that fills in is
+ * honest; a placeholder map name would be a guess shown as a fact.
+ */
+function HomeSkeleton() {
+  return (
+    <div className="screen" aria-busy="true">
+      <header className="appbar">
+        {/* eslint-disable-next-line @next/next/no-img-element -- pixel art, must not be resampled */}
+        <img className="logo pix" src="/art/logo/rush7.png" alt="RUSH 7" />
+        <div className="user-chip notch skeleton" />
+      </header>
+      <section className="hero notch skeleton" style={{ height: 300 }} />
+      <section className="week-head">
+        <div className="skeleton" style={{ width: 140, height: 34 }} />
+        <div className="trophy-chip notch skeleton" style={{ width: 120 }} />
+      </section>
+      <section className="days">
+        {Array.from({ length: 7 }, (_, index) => (
+          <div className="tile notch skeleton" key={index} style={{ height: 112 }} />
+        ))}
+      </section>
+      <TabBar active="home" />
+    </div>
+  );
+}
+
 export function Home({ session }: { session: HomeSession }) {
   // Rendered on the client from a clock that starts at mount: a server-rendered "now" would be wrong by the
   // time it reached the phone, and would not match on hydration.
@@ -111,7 +146,7 @@ export function Home({ session }: { session: HomeSession }) {
     return () => clearInterval(timer);
   }, []);
 
-  if (!now) return <div className="screen" />;
+  if (!now) return <HomeSkeleton />;
 
   const today = todaysMap(now);
   const week = weekSchedule(now);
