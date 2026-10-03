@@ -177,9 +177,10 @@ export function Home({ session }: { session: HomeSession }) {
         <div className="trophy-chip notch">
           <Icon name="trophy" />
           <div>
-            7 MAPS · 7 CHALLENGES
+            7 MAPS · 7 DAYS
             <br />
-            <b>1 CHAMPION</b>
+            {/* The mock said "1 CHAMPION". There is no weekly title (A5 parked), so it says what there is. */}
+            <b>7 LEADERBOARDS</b>
           </div>
         </div>
       </section>

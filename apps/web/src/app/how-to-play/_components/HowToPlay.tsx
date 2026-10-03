@@ -11,13 +11,15 @@ import { TabBar } from '../../_components/TabBar';
  *
  * - "BRAKE · REVERSE". The brake does not reverse. It sets the rear wheel's motor speed to zero with a high
  *   torque (`bike-sim.ts`), which stops the bike; there is no reverse gear to describe.
- * - "The server checks every run, so a time is only official once it is verified." Nothing is submitted or
- *   verified yet — that is Phase 7. Printing it on the instructions would be telling players their times are
- *   policed when they are not, which is exactly the kind of false assurance this project does not give.
+ * - "The server checks every run" was held back while that was untrue. Phase 7 built it, so the card is
+ *   here now. The instructions track what the game does, in both directions: a claim gets added the moment
+ *   it becomes true and removed the moment it stops being.
  * - "One map a day" is the design, but `ALL_MAPS_OPEN_FOR_TESTING` currently overrides it, so the card says
  *   whichever is actually true right now.
  *
- * The weekly-champion card, blank in the mock, can now be filled in: decision A5 is lowest total time.
+ * The mock's weekly-champion card is not reproduced either. A weekly title was considered and then parked
+ * (decision A5), so promising one here would be describing a feature that does not exist and is not being
+ * built. The card says what IS true instead: seven days, seven boards, and no penalty for missing one.
  */
 
 function Card({
@@ -102,13 +104,17 @@ export function HowToPlay() {
         </Card>
 
         <Card icon="ring" title="ONE HUMAN, ONE SPOT">
-          World ID proves you are a real person, so one human gets one place on the board. Submitting times to
-          a server that re-checks every run is still being built; for now your best time is kept on your own
-          device.
+          World ID proves you are a real person, so one human gets one place on the board.
         </Card>
 
-        <Card icon="trophy" title="WEEKLY CHAMPION" tone="gold">
-          Seven maps, one champion. Your seven times are added together and the lowest total wins the week.
+        <Card icon="check" title="THE SERVER TIMES YOUR RUN">
+          Your run sends the buttons you pressed, not the time you got. The server replays them and works the
+          time out itself, so a time only counts once it has been checked.
+        </Card>
+
+        <Card icon="trophy" title="SEVEN BOARDS, SEVEN CHANCES" tone="gold">
+          Every day has its own leaderboard, and each one closes for good when the day ends. Miss a day and
+          nothing is lost — you simply are not on that day’s board.
         </Card>
       </div>
 

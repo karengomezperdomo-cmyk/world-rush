@@ -511,18 +511,32 @@ Deliverables are in `design/` (open `design/index.html`; every screen is also re
 | **H1b** | **No custom domain.** `world-rush.vercel.app` is the address |
 | **H2**  | Resolved in practice: the private repository exists and is pushed to                                      |
 | **F1a** | Resolved in practice: the hosted Neon database is provisioned and in use                                  |
-| **A5**  | **Lowest total time wins**: the seven daily times are added up and the smallest sum is champion. Chosen for simplicity over the points and best-5-of-7 alternatives |
+| **A5**  | **Parked.** No weekly champion for now — the game is seven daily leaderboards and nothing above them. See the note below for the arithmetic that led here |
 | **A3b** | Week 1 starts on **the first Monday after launch**. No date is fixed yet, so the Home header keeps showing a date range instead of a week number until there is one |
 
-### A5 leaves one sub-question, and it is not being invented
+### Missing a day (answered 2026-10-02)
 
-Adding seven times only produces a ranking for players who have seven times. What happens to someone who
-misses a day is a real rule with real consequences — it is the difference between a leaderboard almost
-nobody qualifies for and one that tolerates a missed Tuesday — and the owner has not been asked it yet.
+**There are seven leaderboards, one per day, and missing a day costs nothing — you simply do not appear on
+that day's board.** No penalty, no catch-up, no carried-over position. This is what the code already does:
+one competition per day (`competitions_day_uidx`) and every leaderboard query scoped to a single competition.
 
-It does not block anything today: the weekly screen belongs to Phase 7 and does not exist. It must be
-settled before that screen is built, and the obvious default (rank only players with all seven times,
-show everyone else as unranked) is written here as a *suggestion*, not as a decision taken.
+### …and the weekly champion is PARKED (2026-10-02)
+
+Those two rules did not compose. A5 said the champion was the **lowest total of the seven times**, and
+missing a day is free — so a player who rode three days would have a smaller total than one who rode all
+seven, and **whoever played least would win**. Summing an unequal number of times does not rank players; it
+ranks attendance, backwards.
+
+Shown the choice between "only players with all seven are eligible", "best five of seven" and "no weekly
+title for now", the owner chose **no weekly title for now**. The game is seven daily leaderboards and
+nothing above them.
+
+So A5 is not answered, it is *not needed*: there is no weekly champion to compute. If one is ever wanted,
+the eligibility question above is what has to be settled first, and the arithmetic trap is why.
+
+Two places in the UI promised a weekly title and no longer do — the Home screen's "1 CHAMPION" chip and the
+How to play card — because describing a feature that is not being built is the same lie whether or not
+anyone has noticed yet.
 
 ## 5. PENDING owner decisions
 
@@ -531,7 +545,6 @@ show everyone else as unranked) is written here as a *suggestion*, not as a deci
 | **D2b2** | Re-run the determinism comparison on a real phone once there is one to hand. See §1m: the desktop result is strong but ARM is not x86 | before launch |
 | **D2b** | **World ID human verification on a real device.** Previously failed; the owner expects the current MiniKit to fix it, which is not the same as having seen it work. The temporary diagnostic in `packages/auth/src/world-id.ts` stays until a real verify response is captured | before launch     |
 | **A3b** | **Start date of week 1.** Needed before the Home screen can say "WEEK 1" instead of a date range                               | Phase 8           |
-| **A5**  | Weekly champion formula (options in `docs/phase-0/04-decisions-and-questions.md`; not chosen on the owner's behalf)            | before showing it |
 
 ## 6. World items still to verify (unchanged)
 
