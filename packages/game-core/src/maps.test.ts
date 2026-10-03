@@ -81,7 +81,10 @@ describe('map data is structurally sound', () => {
       expect(Number.isFinite(level.finishX)).toBe(true);
       expect(level.finishX).toBeGreaterThan(level.start.x);
       // The finish line must be on solid ground, not floating over a hole.
-      expect(groundYAt(level, level.finishX), 'the finish line must sit on ground').not.toBeUndefined();
+      expect(
+        groundYAt(level, level.finishX),
+        'the finish line must sit on ground',
+      ).not.toBeUndefined();
     },
   );
 
@@ -91,7 +94,9 @@ describe('map data is structurally sound', () => {
       const { level } = map;
       let previous = level.start.x;
       for (const checkpoint of level.checkpoints) {
-        expect(checkpoint, `checkpoints must increase (after ${previous})`).toBeGreaterThan(previous);
+        expect(checkpoint, `checkpoints must increase (after ${previous})`).toBeGreaterThan(
+          previous,
+        );
         expect(checkpoint, 'checkpoints must be before the finish').toBeLessThan(level.finishX);
         // Orbit Circuit had one at x=100, in mid-air over the opening 14 m hole. Respawning there dropped
         // the rider through the floor, crashed, respawned in the same spot, forever.
@@ -112,7 +117,9 @@ describe('map data is structurally sound', () => {
       for (const strip of strips) {
         expect(strip.length).toBeGreaterThanOrEqual(2);
         for (let i = 1; i < strip.length; i++) {
-          expect(strip[i]![0], 'points within a strip must advance').toBeGreaterThan(strip[i - 1]![0]);
+          expect(strip[i]![0], 'points within a strip must advance').toBeGreaterThan(
+            strip[i - 1]![0],
+          );
         }
       }
       // Consecutive strips must leave a real, positive-width hole. Authoring these by hand produced

@@ -141,7 +141,8 @@ export function SignIn({
               {busy ? 'Opening…' : 'Skip World App (local only)'}
             </button>
             <p className="dev-login-note">
-              Development build. Mints a throwaway session so the game can be played without World App.
+              Development build. Mints a throwaway session so the game can be played without World
+              App.
             </p>
           </>
         )}

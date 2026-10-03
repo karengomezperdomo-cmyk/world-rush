@@ -10,12 +10,15 @@ function useStorage(store = new Map<string, string>()) {
     },
     dispatchEvent: (event: unknown) => void events.push(event),
   });
-  vi.stubGlobal('CustomEvent', class {
-    constructor(
-      public type: string,
-      public init?: { detail?: unknown },
-    ) {}
-  });
+  vi.stubGlobal(
+    'CustomEvent',
+    class {
+      constructor(
+        public type: string,
+        public init?: { detail?: unknown },
+      ) {}
+    },
+  );
   return { store, events };
 }
 
@@ -26,12 +29,15 @@ function useHostileStorage() {
     },
     dispatchEvent: () => undefined,
   });
-  vi.stubGlobal('CustomEvent', class {
-    constructor(
-      public type: string,
-      public init?: { detail?: unknown },
-    ) {}
-  });
+  vi.stubGlobal(
+    'CustomEvent',
+    class {
+      constructor(
+        public type: string,
+        public init?: { detail?: unknown },
+      ) {}
+    },
+  );
 }
 
 afterEach(() => {

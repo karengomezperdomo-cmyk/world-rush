@@ -214,11 +214,14 @@ export function autoCheckpoints(
  * On a low-friction map the bike needs noticeably more road to get back up to speed, so respawn points there
  * demand a longer run-up than they do on rock.
  */
-export function defineLevel(spec: Omit<Level, 'checkpoints'> & { checkpoints?: readonly number[] }): Level {
+export function defineLevel(
+  spec: Omit<Level, 'checkpoints'> & { checkpoints?: readonly number[] },
+): Level {
   const slippery = (spec.groundFriction ?? 1.0) < 1.0;
   return {
     ...spec,
     checkpoints:
-      spec.checkpoints ?? autoCheckpoints(spec.ground, spec.finishX, { minRunway: slippery ? 60 : 50 }),
+      spec.checkpoints ??
+      autoCheckpoints(spec.ground, spec.finishX, { minRunway: slippery ? 60 : 50 }),
   };
 }

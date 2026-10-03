@@ -43,9 +43,15 @@ const FILES = [
   ...Array.from({ length: 24 }, (_, index) => `marshal-hd/loop-${index}.png`),
   // The Home screen's week grid, header and hero.
   'logo/rush7.png',
-  ...['sunset-canyon','coral-coast','emerald-woods','steel-yard','magma-ridge','frost-peak','orbit-circuit'].map(
-    (slug) => `scenes/hero-${slug}.png`,
-  ),
+  ...[
+    'sunset-canyon',
+    'coral-coast',
+    'emerald-woods',
+    'steel-yard',
+    'magma-ridge',
+    'frost-peak',
+    'orbit-circuit',
+  ].map((slug) => `scenes/hero-${slug}.png`),
   'thumbs/map-1-sunset-canyon.png',
   'thumbs/map-2-coral-coast.png',
   'thumbs/map-3-emerald-woods.png',

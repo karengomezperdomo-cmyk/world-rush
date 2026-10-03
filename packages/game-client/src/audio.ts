@@ -192,7 +192,11 @@ export function createGameAudio({
         for (const oscillator of engineOscillators) {
           oscillator.frequency.setTargetAtTime(pitch, now, 0.06);
         }
-        engineFilter.frequency.setTargetAtTime(500 + Math.min(1800, Math.abs(speed) * 110), now, 0.1);
+        engineFilter.frequency.setTargetAtTime(
+          500 + Math.min(1800, Math.abs(speed) * 110),
+          now,
+          0.1,
+        );
       });
     },
 

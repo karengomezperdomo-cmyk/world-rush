@@ -324,7 +324,10 @@ export function marshal({ cheer = false, frame = 0 } = {}) {
     for (let x = 0; x < W; x++) {
       if (c.isOpaque(x, y)) continue;
       const touching =
-        c.isOpaque(x - 1, y) || c.isOpaque(x + 1, y) || c.isOpaque(x, y - 1) || c.isOpaque(x, y + 1);
+        c.isOpaque(x - 1, y) ||
+        c.isOpaque(x + 1, y) ||
+        c.isOpaque(x, y - 1) ||
+        c.isOpaque(x, y + 1);
       if (touching) outlined.set(x, y, C.outline);
     }
   }

@@ -176,7 +176,8 @@ export function decodeReplay(bytes: Uint8Array): DecodedReplay {
   let counted = 0;
   for (let i = 0; i < body / 3; i++) {
     const mask = bytes[offset]!;
-    if ((mask & ~VALID_INPUT_BITS) !== 0) throw new ReplayError(`replay uses unknown input bits: ${mask}`);
+    if ((mask & ~VALID_INPUT_BITS) !== 0)
+      throw new ReplayError(`replay uses unknown input bits: ${mask}`);
     const length = view.getUint16(offset + 1, true);
     if (length === 0) throw new ReplayError('replay contains a zero-length entry');
     entries.push({ mask: mask as InputMask, length });

@@ -74,13 +74,7 @@ export function weekSchedule(
   return MAPS.map((map) => ({
     map,
     status:
-      map.number === today
-        ? 'today'
-        : allOpen
-          ? 'open'
-          : map.number < today
-            ? 'past'
-            : 'locked',
+      map.number === today ? 'today' : allOpen ? 'open' : map.number < today ? 'past' : 'locked',
   }));
 }
 

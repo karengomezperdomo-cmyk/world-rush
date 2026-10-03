@@ -160,7 +160,9 @@ export function SettingsScreen() {
               <div className="set-row">
                 <div>
                   <div className="t">Sign out</div>
-                  <div className="d">Ends your RUSH 7 session. Your World App account is untouched.</div>
+                  <div className="d">
+                    Ends your RUSH 7 session. Your World App account is untouched.
+                  </div>
                 </div>
                 <button
                   className="btn btn-secondary notch set-action"

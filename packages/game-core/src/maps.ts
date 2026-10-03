@@ -291,19 +291,46 @@ export const EMERALD_WOODS: Level = defineLevel({
 export const STEEL_YARD: Level = defineLevel({
   id: 'steel-yard',
   ground: buildTrack(-6, 0, [
-    { steps: [[48, 0], [14, 2.4]] }, // dock 1
+    {
+      steps: [
+        [48, 0],
+        [14, 2.4],
+      ],
+    }, // dock 1
     { gap: 11, drop: 1.2 },
-    { steps: [[10, -0.8], [16, 2.2]] }, // short top with a kicker
+    {
+      steps: [
+        [10, -0.8],
+        [16, 2.2],
+      ],
+    }, // short top with a kicker
     { gap: 12, drop: 1.0 },
     { steps: [[22, 0]] }, // flat top, no kicker at all
     { gap: 9, drop: -0.6 }, // so this gap is narrow, and the far side is HIGHER
-    { steps: [[14, -0.6], [44, 0], [14, 2.2]] }, // dock 2: somewhere to restart from
+    {
+      steps: [
+        [14, -0.6],
+        [44, 0],
+        [14, 2.2],
+      ],
+    }, // dock 2: somewhere to restart from
     { gap: 12, drop: 1.2 },
-    { steps: [[10, -0.8], [14, 2.0]] },
+    {
+      steps: [
+        [10, -0.8],
+        [14, 2.0],
+      ],
+    },
     { gap: 11, drop: 0.8 },
     { steps: [[24, 0]] }, // flat again
     { gap: 9, drop: -0.5 },
-    { steps: [[14, -0.8], [46, 0], [14, 2.2]] }, // dock 3
+    {
+      steps: [
+        [14, -0.8],
+        [46, 0],
+        [14, 2.2],
+      ],
+    }, // dock 3
     { gap: 12, drop: 1.4 },
     {
       steps: [
@@ -335,19 +362,57 @@ export const STEEL_YARD: Level = defineLevel({
 export const MAGMA_RIDGE: Level = defineLevel({
   id: 'magma-ridge',
   ground: buildTrack(-6, 0, [
-    { steps: [[62, 0], [12, 2.4]] }, // 14 m from standstill is only possible with a runway this long
+    {
+      steps: [
+        [62, 0],
+        [12, 2.4],
+      ],
+    }, // 14 m from standstill is only possible with a runway this long
     { gap: 14, drop: 1.6 },
-    { steps: [[18, -1.2], [12, 2.6]] }, // steep: the bike leaves this one rotating
+    {
+      steps: [
+        [18, -1.2],
+        [12, 2.6],
+      ],
+    }, // steep: the bike leaves this one rotating
     { gap: 13, drop: 1.4 },
-    { steps: [[16, -1.0], [10, 2.4]] },
+    {
+      steps: [
+        [16, -1.0],
+        [10, 2.4],
+      ],
+    },
     { gap: 12, drop: 1.6 },
-    { steps: [[20, -1.2], [44, 0], [12, 2.6]] }, // a ledge long enough to restart from
+    {
+      steps: [
+        [20, -1.2],
+        [44, 0],
+        [12, 2.6],
+      ],
+    }, // a ledge long enough to restart from
     { gap: 13, drop: 1.5 },
-    { steps: [[18, -1.0], [12, 2.4]] },
+    {
+      steps: [
+        [18, -1.0],
+        [12, 2.4],
+      ],
+    },
     { gap: 13, drop: 1.2 },
-    { steps: [[20, -1.0], [46, 0], [14, 2.4]] }, // and another
+    {
+      steps: [
+        [20, -1.0],
+        [46, 0],
+        [14, 2.4],
+      ],
+    }, // and another
     { gap: 13, drop: 1.5 },
-    { steps: [[18, -1.0], [24, 0], [12, 2.4]] },
+    {
+      steps: [
+        [18, -1.0],
+        [24, 0],
+        [12, 2.4],
+      ],
+    },
     { gap: 12, drop: 1.4 },
     {
       steps: [
@@ -387,15 +452,45 @@ export const FROST_PEAK: Level = defineLevel({
       ],
     },
     { gap: 13, drop: 1.4 },
-    { steps: [[20, -1.0], [28, 0], [18, 2.4]] },
+    {
+      steps: [
+        [20, -1.0],
+        [28, 0],
+        [18, 2.4],
+      ],
+    },
     { gap: 13, drop: 1.6 },
-    { steps: [[22, -1.2], [26, 0], [16, 2.2]] },
+    {
+      steps: [
+        [22, -1.2],
+        [26, 0],
+        [16, 2.2],
+      ],
+    },
     { gap: 12, drop: 1.5 },
-    { steps: [[20, -1.0], [30, 0], [18, 2.2]] },
+    {
+      steps: [
+        [20, -1.0],
+        [30, 0],
+        [18, 2.2],
+      ],
+    },
     { gap: 12, drop: 1.3 },
-    { steps: [[22, -1.2], [30, 0], [18, 2.2]] },
+    {
+      steps: [
+        [22, -1.2],
+        [30, 0],
+        [18, 2.2],
+      ],
+    },
     { gap: 12, drop: 1.4 },
-    { steps: [[20, -1.0], [34, 0], [18, 2.0]] },
+    {
+      steps: [
+        [20, -1.0],
+        [34, 0],
+        [18, 2.0],
+      ],
+    },
     { gap: 12, drop: 1.3 },
     {
       steps: [
@@ -438,11 +533,21 @@ export const ORBIT_CIRCUIT: Level = defineLevel({
       ],
     },
     { gap: 14, drop: 1.6 },
-    { steps: [[18, -1.0], [20, 0]] }, // flat top, no kicker
+    {
+      steps: [
+        [18, -1.0],
+        [20, 0],
+      ],
+    }, // flat top, no kicker
     // A step DOWN, not a jump: a flat lip gives no lift, so the bike simply falls ~1.1 m while crossing 8 m.
     // The far side has to be lower than that or the rider lands on the wall — at drop 0.4 it always did.
     { gap: 8, drop: 1.8 },
-    { steps: [[16, -0.8], [12, 2.4]] },
+    {
+      steps: [
+        [16, -0.8],
+        [12, 2.4],
+      ],
+    },
     { gap: 13, drop: 1.6 },
     {
       steps: [
@@ -454,15 +559,41 @@ export const ORBIT_CIRCUIT: Level = defineLevel({
       ],
     },
     { gap: 14, drop: 1.8 },
-    { steps: [[20, -1.2], [22, 0], [14, 2.2]] },
+    {
+      steps: [
+        [20, -1.2],
+        [22, 0],
+        [14, 2.2],
+      ],
+    },
     { gap: 13, drop: 1.6 }, // a 13 m gap has to land at least ~1.4 m lower: the bike drops that far crossing it
     // Land, settle, THEN climb. A 10 m landing running straight into a 2.4-over-16 kicker crashed the rider
     // every single time: there is no control authority to straighten up and climb at once.
-    { steps: [[14, -0.8], [22, 0], [14, 2.2]] },
+    {
+      steps: [
+        [14, -0.8],
+        [22, 0],
+        [14, 2.2],
+      ],
+    },
     { gap: 13, drop: 1.4 },
-    { steps: [[18, -1.0], [6, 0.6], [6, -0.6], [22, 0], [12, 2.4]] }, // chop, then the last steep launch
+    {
+      steps: [
+        [18, -1.0],
+        [6, 0.6],
+        [6, -0.6],
+        [22, 0],
+        [12, 2.4],
+      ],
+    }, // chop, then the last steep launch
     { gap: 13, drop: 1.6 },
-    { steps: [[16, -0.8], [24, 0], [14, 2.2]] },
+    {
+      steps: [
+        [16, -0.8],
+        [24, 0],
+        [14, 2.2],
+      ],
+    },
     { gap: 14, drop: 1.8 }, // the widest gap of the week, last
     {
       steps: [

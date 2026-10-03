@@ -48,7 +48,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return Response.json(result);
   } catch (error) {
     if (error instanceof SubmissionError) {
-      const status = error.code === 'not_found' ? 404 : BAD_REQUEST_CODES.has(error.code) ? 400 : 409;
+      const status =
+        error.code === 'not_found' ? 404 : BAD_REQUEST_CODES.has(error.code) ? 400 : 409;
       return Response.json({ error: error.message, code: error.code }, { status });
     }
     throw error;

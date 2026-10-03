@@ -449,7 +449,10 @@ function drawLevel(level: Level, theme: MapTheme, marshalIdle: Texture): LevelVi
           const px = ax + (bx - ax) * t;
           const py = ay + (by - ay) * t + band;
           // Upright, from the deck down to the shared floor.
-          surface.moveTo(px, py).lineTo(px, floor).stroke({ width: 3, color: theme.ground, alpha: 0.85 });
+          surface
+            .moveTo(px, py)
+            .lineTo(px, floor)
+            .stroke({ width: 3, color: theme.ground, alpha: 0.85 });
           // Brace, running back to the foot of the previous upright.
           surface
             .moveTo(previousLegX, previousLegY)
@@ -554,8 +557,17 @@ async function loadSmoothFrames(animation: string, count: number): Promise<Textu
 
 async function loadBikeTextures(): Promise<BikeTextures> {
   const frameIndices = Array.from({ length: SPIN_FRAME_COUNT }, (_, index) => index);
-  const [ride, leanBack, leanForward, ragdoll, explosion, dust, marshalIdle, marshalActivate, marshalLoop] =
-    await Promise.all([
+  const [
+    ride,
+    leanBack,
+    leanForward,
+    ragdoll,
+    explosion,
+    dust,
+    marshalIdle,
+    marshalActivate,
+    marshalLoop,
+  ] = await Promise.all([
     ...POSES.map((pose) =>
       loadFrames(frameIndices.map((frame) => `/art/bike/${POSE_FILES[pose]}-${frame}.png`)),
     ),

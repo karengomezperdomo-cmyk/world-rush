@@ -6,7 +6,16 @@ import { MAPS, SUNSET_CANYON } from './maps';
 function track(): Level {
   return defineLevel({
     id: 'test-track',
-    ground: buildTrack(-6, 0, [{ steps: [[40, 0], [16, 2]] }, { gap: 10, drop: 1.2 }, { steps: [[80, 0]] }]),
+    ground: buildTrack(-6, 0, [
+      {
+        steps: [
+          [40, 0],
+          [16, 2],
+        ],
+      },
+      { gap: 10, drop: 1.2 },
+      { steps: [[80, 0]] },
+    ]),
     start: { x: 0, y: 0.6 },
     finishX: 110,
     killY: -12,

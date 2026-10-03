@@ -118,7 +118,11 @@ describe('competitions', () => {
 
   it('refuses to run the same map twice in one week', async () => {
     const weekStart = new Date('2026-11-09T00:00:00Z');
-    await makeCompetition({ day: new Date('2026-11-09T00:00:00Z'), weekStart, mapSlug: 'frost-peak' });
+    await makeCompetition({
+      day: new Date('2026-11-09T00:00:00Z'),
+      weekStart,
+      mapSlug: 'frost-peak',
+    });
     // Same week, same map, different day: the whole point of the constraint.
     const code = await sqlstateOf(
       makeCompetition({ day: new Date('2026-11-10T00:00:00Z'), weekStart, mapSlug: 'frost-peak' }),
@@ -185,9 +189,12 @@ describe('runs', () => {
       .values({ userId: user.id, competitionId: competition.id, ruleset: 'r1', replayHash: hash });
     // Replaying someone else's file, or your own twice, is one entry — not two.
     const code = await sqlstateOf(
-      db
-        .insert(runs)
-        .values({ userId: user.id, competitionId: competition.id, ruleset: 'r1', replayHash: hash }),
+      db.insert(runs).values({
+        userId: user.id,
+        competitionId: competition.id,
+        ruleset: 'r1',
+        replayHash: hash,
+      }),
     );
     expect(code).toBe(PG_UNIQUE_VIOLATION);
   });

@@ -32,7 +32,7 @@ describe('the daily rotation', () => {
     expect(todaysMap(new Date('2026-09-29T00:00:00Z')).number).toBe(2);
   });
 
-it('closes the days already raced and locks the ones still to come', () => {
+  it('closes the days already raced and locks the ones still to come', () => {
     const week = weekSchedule(new Date('2026-09-30T12:00:00Z'), { allOpen: false }); // Wednesday
     expect(week).toHaveLength(7);
     expect(week.map((day) => day.status)).toEqual([

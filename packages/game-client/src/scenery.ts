@@ -202,7 +202,9 @@ function skyline(x: number, style: RidgeStyle, seedPhase: number): number {
 
   switch (style) {
     case 'waves':
-      return 0.5 + wave(1, 0.18, seedPhase) + wave(2, 0.09, seedPhase * 2) + wave(5, 0.03, seedPhase);
+      return (
+        0.5 + wave(1, 0.18, seedPhase) + wave(2, 0.09, seedPhase * 2) + wave(5, 0.03, seedPhase)
+      );
     case 'peaks': {
       const base = Math.abs((((x / TILE_WIDTH) * 4 + seedPhase) % 2) - 1);
       return 0.68 - base * 0.46 + wave(3, 0.04, seedPhase);
@@ -379,7 +381,12 @@ function starsTexture(): Texture | null {
     const alpha = 0.25 + random() * 0.75;
     context.fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
     const size = random() < 0.15 ? 3 : 2;
-    context.fillRect(Math.floor(random() * TILE_WIDTH), Math.floor(random() * TILE_HEIGHT), size, size);
+    context.fillRect(
+      Math.floor(random() * TILE_WIDTH),
+      Math.floor(random() * TILE_HEIGHT),
+      size,
+      size,
+    );
   }
   return Texture.from(context.canvas);
 }
@@ -439,9 +446,24 @@ export function createScenery(theme: MapTheme): Scenery {
 
   // Nearer layers are darker, bigger-featured and faster: three cues for the same depth.
   const layers = [
-    { texture: ridgeTexture(theme.ridge, theme.decor, theme.farColour, 0.6, 11, 0.6), speed: 0.08, height: 0.34, top: 0.24 },
-    { texture: ridgeTexture(theme.ridge, theme.decor, theme.midColour, 2.4, 29, 0.85), speed: 0.18, height: 0.34, top: 0.38 },
-    { texture: ridgeTexture(theme.ridge, theme.decor, theme.nearColour, 4.1, 53, 1.15), speed: 0.34, height: 0.32, top: 0.5 },
+    {
+      texture: ridgeTexture(theme.ridge, theme.decor, theme.farColour, 0.6, 11, 0.6),
+      speed: 0.08,
+      height: 0.34,
+      top: 0.24,
+    },
+    {
+      texture: ridgeTexture(theme.ridge, theme.decor, theme.midColour, 2.4, 29, 0.85),
+      speed: 0.18,
+      height: 0.34,
+      top: 0.38,
+    },
+    {
+      texture: ridgeTexture(theme.ridge, theme.decor, theme.nearColour, 4.1, 53, 1.15),
+      speed: 0.34,
+      height: 0.32,
+      top: 0.5,
+    },
   ].flatMap((layer) =>
     layer.texture
       ? [{ sprite: new TilingSprite({ texture: layer.texture, width: 1, height: 1 }), ...layer }]

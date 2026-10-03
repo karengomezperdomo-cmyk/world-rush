@@ -48,7 +48,9 @@ export function readSettings(): Settings {
     // Field by field, so a corrupted or half-written value falls back to its default rather than
     // poisoning the whole object — and so settings added later do not break an older stored blob.
     return {
-      soundEffects: isBoolean(stored.soundEffects) ? stored.soundEffects : DEFAULT_SETTINGS.soundEffects,
+      soundEffects: isBoolean(stored.soundEffects)
+        ? stored.soundEffects
+        : DEFAULT_SETTINGS.soundEffects,
       music: isBoolean(stored.music) ? stored.music : DEFAULT_SETTINGS.music,
       vibration: isBoolean(stored.vibration) ? stored.vibration : DEFAULT_SETTINGS.vibration,
       swapSides: isBoolean(stored.swapSides) ? stored.swapSides : DEFAULT_SETTINGS.swapSides,

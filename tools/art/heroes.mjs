@@ -140,7 +140,11 @@ export function heroCoralCoast() {
       [0.8, '#7fd0ec'],
       [1, '#dff6f2'],
     ],
-    { horizon, seed: 12, clouds: { count: 5, high: '#ffffff55', mid: '#ffffff99', low: '#bfe8ff88' } },
+    {
+      horizon,
+      seed: 12,
+      clouds: { count: 5, high: '#ffffff55', mid: '#ffffff99', low: '#bfe8ff88' },
+    },
   );
 
   // A low reef island, sitting right on the waterline.
@@ -204,7 +208,11 @@ export function heroEmeraldWoods() {
       [0.5, '#1d5a4a'],
       [1, '#8fd6b0'],
     ],
-    { horizon, seed: 9, clouds: { count: 4, high: '#ffffff33', mid: '#dff5e866', low: '#9fd8bc55' } },
+    {
+      horizon,
+      seed: 9,
+      clouds: { count: 4, high: '#ffffff33', mid: '#dff5e866', low: '#9fd8bc55' },
+    },
   );
 
   // Far ridge, hazed out so the near trees read as closer.
@@ -225,9 +233,11 @@ export function heroEmeraldWoods() {
   );
 
   const far = rng(5);
-  for (let i = 0; i < 16; i++) pine(c, far.int(-4, W + 4), horizon - 2, far.int(22, 34), '#255f4c', '#347a60');
+  for (let i = 0; i < 16; i++)
+    pine(c, far.int(-4, W + 4), horizon - 2, far.int(22, 34), '#255f4c', '#347a60');
   const mid = rng(15);
-  for (let i = 0; i < 11; i++) pine(c, mid.int(-6, W + 6), horizon + 16, mid.int(34, 50), '#1b4d3e', '#276b50');
+  for (let i = 0; i < 11; i++)
+    pine(c, mid.int(-6, W + 6), horizon + 16, mid.int(34, 50), '#1b4d3e', '#276b50');
 
   groundBand(c, {
     top: horizon + 20,
@@ -305,7 +315,8 @@ export function heroSteelYard() {
         c.rect(bx, by, w, h, colour);
         c.hline(bx, by, w, mix(colour, '#ffffff', 0.35));
         c.hline(bx, by + h - 1, w, mix(colour, '#000000', 0.45));
-        for (let i = 2; i < w - 2; i += 3) c.vline(bx + i, by + 2, h - 4, mix(colour, '#000000', 0.18));
+        for (let i = 2; i < w - 2; i += 3)
+          c.vline(bx + i, by + 2, h - 4, mix(colour, '#000000', 0.18));
       }
     }
   };
@@ -327,7 +338,11 @@ export function heroMagmaRidge() {
       [0.5, '#5a1220'],
       [1, '#c4452a'],
     ],
-    { horizon, seed: 6, clouds: { count: 5, high: '#00000055', mid: '#3a0d1899', low: '#ff6a3a88' } },
+    {
+      horizon,
+      seed: 6,
+      clouds: { count: 5, high: '#00000055', mid: '#3a0d1899', low: '#ff6a3a88' },
+    },
   );
 
   c.blit(
@@ -410,7 +425,13 @@ export function heroFrostPeak() {
       [0.5, '#5b9ccc'],
       [1, '#d8eefc'],
     ],
-    { horizon, seed: 14, stars: 14, starColours: ['#eaf6ff'], clouds: { count: 4, high: '#ffffff55', mid: '#ffffff99', low: '#cfe6f855' } },
+    {
+      horizon,
+      seed: 14,
+      stars: 14,
+      starColours: ['#eaf6ff'],
+      clouds: { count: 4, high: '#ffffff55', mid: '#ffffff99', low: '#cfe6f855' },
+    },
   );
 
   c.blit(

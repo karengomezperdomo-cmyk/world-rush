@@ -60,7 +60,13 @@ function DayTile({ scheduled }: { scheduled: ScheduledMap }) {
           ? 'tile closed notch'
           : 'tile notch';
   const label =
-    status === 'today' ? 'TODAY' : status === 'locked' ? 'LOCKED' : status === 'past' ? 'CLOSED' : 'OPEN';
+    status === 'today'
+      ? 'TODAY'
+      : status === 'locked'
+        ? 'LOCKED'
+        : status === 'past'
+          ? 'CLOSED'
+          : 'OPEN';
 
   const tile = (
     <div className={className}>
