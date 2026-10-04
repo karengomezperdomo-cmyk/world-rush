@@ -94,6 +94,10 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
     b2CreateSegmentShape,
     b2CreateCapsuleShape,
     b2CreateCircleShape,
+    b2CreatePolygonShape,
+    b2MakeBox,
+    b2ComputeHull,
+    b2MakePolygon,
     b2Segment,
     b2Capsule,
     b2Circle,
@@ -144,6 +148,48 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
       shapeDef.material.friction = level.groundFriction ?? 1.0;
       b2CreateSegmentShape(groundId, shapeDef, segment);
     }
+  }
+
+  // --- Obstacles: static bodies the bike has to deal with rather than ride over.
+  //
+  // Each gets its own body at its own centre, so the shape is defined around the origin and the position
+  // carries the placement. Built from the same level data on both the phone and the server, in the same
+  // order, which is what keeps a replay verifiable.
+  for (const block of level.blocks ?? []) {
+    const bodyDef = b2DefaultBodyDef();
+    bodyDef.position = new b2Vec2(block.x, block.y);
+    const bodyId = b2CreateBody(worldId, bodyDef);
+    const shapeDef = b2DefaultShapeDef();
+    shapeDef.material.friction = level.groundFriction ?? 1.0;
+    b2CreatePolygonShape(bodyId, shapeDef, b2MakeBox(block.width / 2, block.height / 2));
+  }
+  for (const round of level.rounds ?? []) {
+    const bodyDef = b2DefaultBodyDef();
+    bodyDef.position = new b2Vec2(round.x, round.y);
+    const bodyId = b2CreateBody(worldId, bodyDef);
+    const circle = new b2Circle();
+    circle.center = new b2Vec2(0, 0);
+    circle.radius = round.radius;
+    const shapeDef = b2DefaultShapeDef();
+    shapeDef.material.friction = level.groundFriction ?? 1.0;
+    b2CreateCircleShape(bodyId, shapeDef, circle);
+  }
+
+  for (const ramp of level.ramps ?? []) {
+    const bodyDef = b2DefaultBodyDef();
+    bodyDef.position = new b2Vec2(ramp.x, ramp.y);
+    const bodyId = b2CreateBody(worldId, bodyDef);
+    // A right-facing wedge rises away from the rider; a left-facing one is the same triangle mirrored,
+    // which is a landing ramp rather than a take-off.
+    const peak = ramp.facing === 'left' ? 0 : ramp.width;
+    const hull = b2ComputeHull([
+      new b2Vec2(0, 0),
+      new b2Vec2(ramp.width, 0),
+      new b2Vec2(peak, ramp.height),
+    ]);
+    const shapeDef = b2DefaultShapeDef();
+    shapeDef.material.friction = level.groundFriction ?? 1.0;
+    b2CreatePolygonShape(bodyId, shapeDef, b2MakePolygon(hull, 0));
   }
 
   // --- Chassis ---
@@ -284,6 +330,30 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
     }
   }
 
+  /**
+   * Whether the chassis is inside a hazard.
+   *
+   * A point test against the chassis centre, not a Box2D sensor: sensors report through the contact
+   * events of the step that produced them, which means reading them back in the right order every time on
+   * both the phone and the server. A rectangle test on one position is the same answer everywhere, and
+   * costs a handful of comparisons per tick.
+   */
+  function inHazard(x: number, y: number): boolean {
+    for (const hazard of level.hazards ?? []) {
+      const halfWidth = hazard.width / 2;
+      const halfHeight = hazard.height / 2;
+      if (
+        x >= hazard.x - halfWidth &&
+        x <= hazard.x + halfWidth &&
+        y >= hazard.y - halfHeight &&
+        y <= hazard.y + halfHeight
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function step(input: InputMask): void {
     tick += 1;
 
@@ -329,7 +399,7 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
     const up = b2Rot_GetYAxis(rot);
 
     if (!crashed && !finished) {
-      if (up.y < CRASH_UP_THRESHOLD || pos.y < killY()) {
+      if (up.y < CRASH_UP_THRESHOLD || pos.y < killY() || inHazard(pos.x, pos.y)) {
         crashed = true;
         crashedAtTick = tick;
       } else {

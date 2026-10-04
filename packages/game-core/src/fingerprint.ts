@@ -74,5 +74,47 @@ export function levelFingerprint(level: Level): string {
   }
   for (const checkpoint of level.checkpoints) hash = mixFloat(hash, checkpoint);
 
+  // Everything placed ON the track, in order. A fuel can moved by a metre, a wall removed or a ramp made
+  // steeper all change what the race IS, so a time set before the change is not comparable to one set
+  // after it — which is the entire question this fingerprint exists to answer.
+  //
+  // The count goes in as well as the contents, so an empty list and a missing list stay distinguishable
+  // from a list whose values happen to hash the same way.
+  for (const can of level.fuelCans ?? []) {
+    hash = mixFloat(hash, can.x);
+    hash = mixFloat(hash, can.y);
+    hash = mixFloat(hash, can.refill);
+  }
+  hash = mix(hash, level.fuelCans?.length ?? 0);
+  for (const block of level.blocks ?? []) {
+    hash = mixFloat(hash, block.x);
+    hash = mixFloat(hash, block.y);
+    hash = mixFloat(hash, block.width);
+    hash = mixFloat(hash, block.height);
+  }
+  hash = mix(hash, level.blocks?.length ?? 0);
+  for (const round of level.rounds ?? []) {
+    hash = mixFloat(hash, round.x);
+    hash = mixFloat(hash, round.y);
+    hash = mixFloat(hash, round.radius);
+  }
+  hash = mix(hash, level.rounds?.length ?? 0);
+  for (const ramp of level.ramps ?? []) {
+    hash = mixFloat(hash, ramp.x);
+    hash = mixFloat(hash, ramp.y);
+    hash = mixFloat(hash, ramp.width);
+    hash = mixFloat(hash, ramp.height);
+    // Mirroring a kicker turns a take-off into a landing: the same triangle, a different jump.
+    hash = mix(hash, ramp.facing === 'left' ? 1 : 0);
+  }
+  hash = mix(hash, level.ramps?.length ?? 0);
+  for (const hazard of level.hazards ?? []) {
+    hash = mixFloat(hash, hazard.x);
+    hash = mixFloat(hash, hazard.y);
+    hash = mixFloat(hash, hazard.width);
+    hash = mixFloat(hash, hazard.height);
+  }
+  hash = mix(hash, level.hazards?.length ?? 0);
+
   return hash.toString(16).padStart(8, '0');
 }

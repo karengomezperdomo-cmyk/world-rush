@@ -99,3 +99,57 @@ describe('level fingerprints', () => {
     expect(fingerprint).toMatch(/^[0-9a-f]{8}$/);
   });
 });
+
+/**
+ * Everything placed on the track counts as the track.
+ *
+ * These were added after the fact — fuel cans, obstacles, ramps and hazards all arrived later than the
+ * fingerprint — and for a while none of them were hashed, which would have let a map be re-tuned under a
+ * leaderboard without the change ever being noticed.
+ */
+describe('objects on the track', () => {
+  const base = defineLevel({
+    id: 'objects',
+    ground: [
+      [
+        [0, 0],
+        [100, 0],
+      ],
+    ],
+    start: { x: 0, y: 0.6 },
+    checkpoints: [50],
+    finishX: 90,
+    killY: -10,
+  });
+
+  it('notices a fuel can being added, moved or made more generous', () => {
+    const withCan = { ...base, fuelCans: [{ x: 40, y: 0.6, refill: 8 }] };
+    const moved = { ...base, fuelCans: [{ x: 41, y: 0.6, refill: 8 }] };
+    const richer = { ...base, fuelCans: [{ x: 40, y: 0.6, refill: 9 }] };
+
+    expect(levelFingerprint(withCan)).not.toBe(levelFingerprint(base));
+    expect(levelFingerprint(moved)).not.toBe(levelFingerprint(withCan));
+    expect(levelFingerprint(richer)).not.toBe(levelFingerprint(withCan));
+  });
+
+  it('notices an obstacle being added or resized', () => {
+    const walled = { ...base, blocks: [{ x: 30, y: 1, width: 1, height: 2 }] };
+    const wider = { ...base, blocks: [{ x: 30, y: 1, width: 2, height: 2 }] };
+    expect(levelFingerprint(walled)).not.toBe(levelFingerprint(base));
+    expect(levelFingerprint(wider)).not.toBe(levelFingerprint(walled));
+  });
+
+  it('notices a kicker being mirrored, which turns a take-off into a landing', () => {
+    const ramp = { ...base, ramps: [{ x: 30, y: 0, width: 3, height: 1 }] } as const;
+    const mirrored = {
+      ...base,
+      ramps: [{ x: 30, y: 0, width: 3, height: 1, facing: 'left' }],
+    } as const;
+    expect(levelFingerprint(mirrored)).not.toBe(levelFingerprint(ramp));
+  });
+
+  it('notices a hazard appearing', () => {
+    const lava = { ...base, hazards: [{ x: 30, y: 0.5, width: 4, height: 2 }] };
+    expect(levelFingerprint(lava)).not.toBe(levelFingerprint(base));
+  });
+});

@@ -47,6 +47,78 @@ export interface Level {
    * one hung over a jump is a different proposition from one sitting on the floor.
    */
   readonly fuelCans?: readonly FuelCan[];
+  /** Solid things on the track. See `LevelBlock`. */
+  readonly blocks?: readonly LevelBlock[];
+  readonly rounds?: readonly LevelRound[];
+  /** Kickers. See `LevelRamp`. */
+  readonly ramps?: readonly LevelRamp[];
+  /** Areas that end the run on contact, independently of `killY`. See `LevelHazard`. */
+  readonly hazards?: readonly LevelHazard[];
+}
+
+/**
+ * Something solid sitting on the track.
+ *
+ * Until these existed a level was ground, gaps, friction and a kill height - four knobs, which is why all
+ * seven maps were the same map at different amplitudes. A crate to clear, a pipe to roll over or a
+ * container to land on are different PROBLEMS, not different volumes of the same one.
+ *
+ * Static on purpose, for now. Box2D is deterministic enough to let these be knocked around, and a replay
+ * would still verify - but a crate that moves is a crate whose position depends on every earlier run
+ * through it, and that is a much larger change than it looks. Fixed obstacles first.
+ *
+ * `art` only picks the sprite. The physics comes from the shape, so a crate and a concrete block collide
+ * identically and a map can be re-skinned without re-tuning it.
+ */
+export interface LevelBlock {
+  /** Centre of the box, in metres. */
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly art?: 'crate' | 'container' | 'concrete';
+}
+
+/**
+ * A kicker: a wedge that launches the bike.
+ *
+ * The one obstacle that creates AIR rather than taking it away. Jumps used to be possible only by
+ * sculpting the ground itself, which means a jump could only exist where the terrain was being drawn
+ * anyway; a ramp can be dropped anywhere, including right after a flat run-up.
+ *
+ * `x`, `y` is the bottom of the leading edge. The wedge rises across `width` to `height` at the far end,
+ * and `facing: 'left'` mirrors it into a landing ramp.
+ */
+export interface LevelRamp {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly facing?: 'right' | 'left';
+  readonly art?: 'dirt' | 'metal' | 'wood';
+}
+
+/** A round obstacle: a pipe end-on, a tyre, a boulder. Rolls the bike over it instead of stopping it. */
+export interface LevelRound {
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  readonly art?: 'tyre' | 'pipe' | 'boulder';
+}
+
+/**
+ * A rectangle that ends the run on contact: water, lava, a bed of spikes.
+ *
+ * Separate from `killY` because that is a single height across the whole map, which can only ever say
+ * "fall far enough and you die". A hazard can sit ON the track - a lava pool between two jumps is a
+ * hazard; the bottom of the canyon is a kill height - so the two answer different questions.
+ */
+export interface LevelHazard {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly art?: 'water' | 'lava' | 'spikes';
 }
 
 export interface FuelCan {
