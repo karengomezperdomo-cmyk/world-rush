@@ -132,6 +132,13 @@ export interface GameHandle {
    */
   pause(): void;
   resume(): void;
+  /**
+   * Continues from the last checkpoint after running the tank dry.
+   *
+   * Pressed once, not held: the flag is given to exactly one tick, so it is recorded in the replay like
+   * any other button and the server reproduces - and counts - the continue when it re-simulates.
+   */
+  continueFromCheckpoint(): void;
   /** Throws the current run away and starts the same level again from tick zero. */
   restart(): void;
   /**
@@ -215,6 +222,8 @@ export async function startGame({
 
   let accumulatorMs = 0;
   let paused = false;
+  /** Buttons to feed into exactly one upcoming tick, for actions that are pressed rather than held. */
+  let pendingOnce: InputMask = 0;
   const onTick = (): void => {
     if (paused) {
       // Drop the elapsed time on the floor instead of banking it: otherwise resuming would fast-forward
@@ -232,8 +241,12 @@ export async function startGame({
     if (ticks > 0) {
       heldInput = input.getMask();
       for (let i = 0; i < ticks; i++) {
-        recorder?.record(heldInput);
-        simulation.step(heldInput);
+        // A one-shot flag rides along with whatever is held, for a single tick, and is then cleared: a
+        // continue repeated over several ticks would be counted - and charged - several times.
+        const tickInput = heldInput | pendingOnce;
+        pendingOnce = 0;
+        recorder?.record(tickInput);
+        simulation.step(tickInput);
       }
       onState?.(simulation.getState());
     }
@@ -372,6 +385,12 @@ export async function startGame({
     },
     getReplay() {
       return recorder ? recorder.encode() : null;
+    },
+    continueFromCheckpoint() {
+      pendingOnce |= INPUT.CONTINUE;
+      // Continuing is itself the decision the pause was waiting for, so the clock starts again with it.
+      paused = false;
+      accumulatorMs = 0;
     },
     restart() {
       // A new run needs a new recording: carrying the old inputs over would describe a race nobody rode.

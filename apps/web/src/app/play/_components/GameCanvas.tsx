@@ -1,6 +1,9 @@
 'use client';
 
 import {
+  CONTINUE_PENALTY_SECONDS,
+  DEFAULT_TANK_SECONDS,
+  FREE_CONTINUES,
   INPUT,
   mapByNumber,
   TICK_SECONDS,
@@ -27,6 +30,7 @@ import { Icon } from '../../_components/IconSprite';
 import {
   CrashToast,
   FinishOverlay,
+  OutOfFuelOverlay,
   PauseOverlay,
   UNRANKED_WARNING,
   type Verification,
@@ -150,7 +154,17 @@ export function GameCanvas() {
   const splitsRef = useRef<number[]>([]);
   const lastCheckpointRef = useRef(-1);
   const finishedRef = useRef(false);
+  /** Read from inside the game loop's callback, where state would be a frame stale. */
+  const outOfFuelRef = useRef(false);
   const [crashCount, setCrashCount] = useState(0);
+  /**
+   * Open while the tank is empty and the player has not chosen yet.
+   *
+   * Held separately from the simulation's own `outOfFuel` because the two answer different questions: the
+   * simulation says the tank is empty, this says the player is being asked about it. Continuing refills,
+   * which closes the menu on its own; restarting throws the run away.
+   */
+  const [outOfFuel, setOutOfFuel] = useState(false);
   const audioRef = useRef<GameAudio | null>(null);
   // Read from the game loop every frame, so it must be a ref rather than state.
   const settingsRef = useRef<Settings>(readSettings());
@@ -162,6 +176,8 @@ export function GameCanvas() {
     splitsRef.current = [];
     lastCheckpointRef.current = -1;
     finishedRef.current = false;
+    outOfFuelRef.current = false;
+    setOutOfFuel(false);
     setCrashCount(0);
     setFinish(null);
   }, []);
@@ -233,6 +249,18 @@ export function GameCanvas() {
         splitsRef.current = [...splitsRef.current, next.tick];
         audioRef.current?.checkpoint();
         if (settingsRef.current.vibration) hapticCheckpoint();
+      }
+
+      // Out of fuel: stop the simulation before asking. The run clock IS the tick count, so pausing it is
+      // what makes the question free to answer - which is the only reason a paid option could ever be
+      // offered here without stealing the run it is supposed to rescue.
+      if (next.outOfFuel && !next.finished && !outOfFuelRef.current) {
+        outOfFuelRef.current = true;
+        handleRef.current?.pause();
+        setOutOfFuel(true);
+      } else if (!next.outOfFuel && outOfFuelRef.current) {
+        outOfFuelRef.current = false;
+        setOutOfFuel(false);
       }
 
       audioRef.current?.engine(next.vx ?? 0, !next.crashed && !next.finished);
@@ -329,6 +357,12 @@ export function GameCanvas() {
     if (map) void openRunFor(map.level.id).then((runId) => (runIdRef.current = runId));
   }, [map, openRunFor, resetRunBookkeeping]);
 
+  const continueFromCheckpoint = useCallback(() => {
+    setOutOfFuel(false);
+    outOfFuelRef.current = false;
+    handleRef.current?.continueFromCheckpoint();
+  }, []);
+
   const quit = useCallback(() => router.push('/'), [router]);
 
   const time = runTimeParts(state?.finishTick ?? state?.tick ?? 0);
@@ -364,6 +398,15 @@ export function GameCanvas() {
             ) : (
               <span className="chip notch">{t('game.checkpointChip', { number: reached })}</span>
             )}
+            {/* The tank, as a bar. Seconds of throttle is the unit the player feels, so the bar empties
+                only while the gas is held and a can visibly refills it. */}
+            <span className="fuel notch" aria-label={t('game.fuel')}>
+              <i
+                style={{
+                  width: `${Math.min(100, Math.round(((state?.fuel ?? DEFAULT_TANK_SECONDS) / DEFAULT_TANK_SECONDS) * 100))}%`,
+                }}
+              />
+            </span>
             <span className="cp-pips">
               {Array.from({ length: checkpointCount }, (_, index) => (
                 <span
@@ -433,6 +476,20 @@ export function GameCanvas() {
           bestTicks={bestTicks}
           raceEndsIn={raceEndsIn}
           onResume={resume}
+          onRestart={restart}
+          onQuit={quit}
+        />
+      )}
+
+      {outOfFuel && map && !finish && (
+        <OutOfFuelOverlay
+          map={map}
+          ticks={state?.tick ?? 0}
+          checkpoint={state?.checkpointIndex ?? null}
+          continuesUsed={state?.continues ?? 0}
+          freeContinues={FREE_CONTINUES}
+          penaltySeconds={CONTINUE_PENALTY_SECONDS}
+          onContinue={continueFromCheckpoint}
           onRestart={restart}
           onQuit={quit}
         />

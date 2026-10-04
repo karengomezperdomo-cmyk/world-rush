@@ -148,3 +148,26 @@ describe('continuing after running dry', () => {
     expect(after.x).toBeCloseTo(level.checkpoints[dry.checkpointIndex]!, 0);
   });
 });
+
+describe('the tank is a ceiling, not a suggestion', () => {
+  /**
+   * A continue guarantees enough fuel to reach the next checkpoint, and that guarantee must not be able to
+   * overfill the tank. Found by shrinking the tank to five seconds for a UI check: the gauge read 150%,
+   * because the ten-second floor was handed over without asking whether it fitted.
+   *
+   * Harmless while every bike has the same 60-second tank. Not harmless at all once each of the seven bikes
+   * brings its own.
+   */
+  it('never leaves more fuel in the tank than the tank holds', () => {
+    const level = flatLevel();
+    const simulation = createBikeSimulation(engine, level);
+    for (let tick = 0; tick < (DEFAULT_TANK_SECONDS + 2) * 60; tick++) simulation.step(INPUT.GAS);
+    simulation.step(INPUT.CONTINUE);
+    const state = simulation.getState();
+    simulation.dispose();
+
+    expect(state.continues).toBe(1);
+    expect(state.fuel).toBeLessThanOrEqual(DEFAULT_TANK_SECONDS);
+    expect(state.fuel).toBeGreaterThan(0);
+  });
+});

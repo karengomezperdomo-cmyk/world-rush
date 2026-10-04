@@ -14,7 +14,9 @@ import {
   type Db,
 } from '@worldrush/db';
 import {
+  CONTINUE_PENALTY_SECONDS,
   decodeReplay,
+  FREE_CONTINUES,
   MAX_REPLAY_TICKS,
   mapByNumber,
   ReplayError,
@@ -303,7 +305,11 @@ export async function submitRun(
     throw new SubmissionError('this replay does not reach the finish line', 'did_not_finish');
   }
 
-  const durationMs = outcome.durationMs;
+  // The penalty is applied to the time the SERVER computed, from a continue count the SERVER counted while
+  // re-simulating. Neither number passes through the client, so neither can be argued with.
+  const paidContinues = Math.max(0, outcome.continues - FREE_CONTINUES);
+  const penaltyMs = paidContinues * CONTINUE_PENALTY_SECONDS * 1000;
+  const durationMs = outcome.durationMs + penaltyMs;
   const claimed = input.claimedDurationMs ?? null;
   try {
     await db
@@ -318,11 +324,17 @@ export async function submitRun(
         replayHash,
         // A client that reports a different time from the server's is not necessarily cheating — a stale
         // build does it too — but it is always worth being able to see.
-        isSuspicious: claimed !== null && Math.abs(claimed - durationMs) > 50,
+        // Compared against the RAW time: the client times the ride, and has no way to know about a
+        // penalty the server adds afterwards. Comparing against the penalised figure would flag every
+        // honest player who continued three times.
+        isSuspicious: claimed !== null && Math.abs(claimed - outcome.durationMs) > 50,
         validation: {
           finished: true,
           finishTick: outcome.finishTick,
           crashes: outcome.crashes,
+          continues: outcome.continues,
+          penaltyMs,
+          rawDurationMs: outcome.durationMs,
           claimedDurationMs: claimed,
         },
       })

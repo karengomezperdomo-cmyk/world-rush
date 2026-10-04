@@ -99,6 +99,93 @@ export function PauseOverlay({
   );
 }
 
+/**
+ * What the rider sees when the tank runs dry.
+ *
+ * The run clock is the simulation's own tick count, and the simulation is paused while this is open, so
+ * reading it costs nothing — which is the whole reason a decision can be offered here at all. The screen
+ * says so out loud, because a timer that has visibly stopped still looks like a trap.
+ *
+ * Two free continues, then each one adds seconds to the time. The cost is applied by the SERVER, from a
+ * continue count it reaches by re-simulating the replay, so what this screen promises is what gets
+ * charged.
+ */
+export function OutOfFuelOverlay({
+  map,
+  ticks,
+  checkpoint,
+  continuesUsed,
+  freeContinues,
+  penaltySeconds,
+  onContinue,
+  onRestart,
+  onQuit,
+}: {
+  map: MapEntry;
+  ticks: number;
+  checkpoint: number | null;
+  continuesUsed: number;
+  freeContinues: number;
+  penaltySeconds: number;
+  onContinue: () => void;
+  onRestart: () => void;
+  onQuit: () => void;
+}) {
+  const { t } = useTranslation();
+  const freeLeft = Math.max(0, freeContinues - continuesUsed);
+  return (
+    <>
+      <div className="scrim heavy" />
+      <div
+        className="modal modal-centre notch"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('game.outOfFuel')}
+      >
+        <div className="eyebrow">
+          {t('home.map', { number: map.number })} · {t(mapNameKey(map))}
+        </div>
+        <div className="banner" style={{ margin: '10px 0 6px' }}>
+          {t('game.outOfFuel')}
+        </div>
+        <p className="hint" style={{ marginBottom: 14 }}>
+          {t('game.outOfFuelDetail')}
+        </p>
+        <div className="stack">
+          <div className="row-kv notch">
+            <span className="k">{t('game.time')}</span>
+            <span className="v">{formatRunTime(ticks)}</span>
+          </div>
+        </div>
+        <div className="stack" style={{ marginTop: 16 }}>
+          <button className="btn btn-primary" type="button" onClick={onContinue}>
+            {freeLeft === 0
+              ? t('game.continueCost', { seconds: penaltySeconds })
+              : checkpoint === null || checkpoint < 0
+                ? t('game.continueFromStart')
+                : t('game.continueFree', { number: checkpoint + 1 })}
+          </button>
+          {freeLeft > 0 && (
+            <p className="hint" style={{ margin: '2px 0 6px' }}>
+              {t('game.continueFreeLeft', { count: freeLeft })}
+            </p>
+          )}
+          <button className="btn btn-secondary notch" type="button" onClick={onRestart}>
+            <Icon name="refresh" className="i" />
+            {t('game.startOver')}
+          </button>
+          <p className="hint" style={{ margin: '2px 0 6px' }}>
+            {t('game.startOverDetail')}
+          </p>
+          <button className="btn btn-ghost" type="button" onClick={onQuit}>
+            {t('game.quit')}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function CrashToast({
   crashedTicksAgo,
   respawnCheckpoint,

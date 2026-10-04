@@ -534,3 +534,23 @@ body {
   background: #2a1b06f2;
   --nb: #8a6a1f;
 }
+
+/* The tank, as a bar beside the checkpoint pips. It empties only while the gas is held, so what the player
+   sees drain is exactly what they spent — and a petrol can visibly fills it back up. */
+.game-screen .fuel {
+  display: inline-block;
+  position: relative;
+  width: 54px;
+  height: 10px;
+  margin-right: 6px;
+  background: #0a1128;
+  --nb: var(--line-3);
+  vertical-align: middle;
+}
+
+.game-screen .fuel i {
+  position: absolute;
+  inset: 2px auto 2px 2px;
+  background: linear-gradient(90deg, #ffc23e, #2ee59d);
+  transition: width 120ms linear;
+}

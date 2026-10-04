@@ -30,6 +30,30 @@ const FUEL_PICKUP_RADIUS = 1.3;
  * map, and little enough that continuing is never a refuelling strategy.
  */
 const CONTINUE_MINIMUM_SECONDS = 10;
+
+/**
+ * How many continues a run gets for nothing.
+ *
+ * Two, because running dry once is a mistake worth forgiving and running dry three times is a choice.
+ * The owner's rule; the cost of the ones after it lives in `@worldrush/runs`, where the server can apply
+ * it to a time it computed itself.
+ */
+export const FREE_CONTINUES = 2;
+
+/**
+ * What each continue past the free ones adds to the verified time, in seconds.
+ *
+ * Lives here, beside the free allowance, because the two are one rule and both halves have to be known on
+ * both sides: the screen has to promise the cost before the player chooses, and the server has to apply
+ * exactly that cost to a time it computed itself. A constant in the server package alone would have put
+ * the promise and the charge in different files, free to drift apart.
+ *
+ * Seconds rather than money, for now. The owner asked for a small charge in WLD from the third continue
+ * on; that needs decision D3 reversed, a Developer Portal app and backend verification of every payment -
+ * and World's payments are not available in every region, so a run only rescuable by paying would be
+ * unrescuable for some players. A time penalty is the currency a time trial already trades in.
+ */
+export const CONTINUE_PENALTY_SECONDS = 5;
 /** Metres above the ground a respawn drops the bike from, so it settles instead of clipping into it. */
 const RESPAWN_CLEARANCE = 1.0;
 /** Chassis "up" dot with world-up below this = too far tilted: a crash (docs/design/GDD.md §5). */
@@ -363,7 +387,13 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
       continues += 1;
       // Continuing into an empty tank would strand the player at the checkpoint for ever, so the floor is
       // enough fuel to reach the next one.
-      fuelAtCheckpoint = Math.max(fuelAtCheckpoint, CONTINUE_MINIMUM_SECONDS);
+      // Clamped to the tank, not just raised to the floor. Found with a 5-second tank during a UI check:
+      // the gauge read 150%, because a continue handed back ten seconds a five-second tank cannot hold.
+      // Harmless at 60 seconds, and not harmless at all once each bike brings its own tank size.
+      fuelAtCheckpoint = Math.min(
+        DEFAULT_TANK_SECONDS,
+        Math.max(fuelAtCheckpoint, CONTINUE_MINIMUM_SECONDS),
+      );
       respawnAtCheckpoint();
     }
 

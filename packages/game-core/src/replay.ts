@@ -199,6 +199,14 @@ export interface ReplayOutcome {
   readonly durationMs: number | null;
   readonly ticksSimulated: number;
   readonly crashes: number;
+  /**
+   * How many times the rider continued from a checkpoint after running the tank dry.
+   *
+   * Counted by the SERVER as it re-simulates, which is the only reason a cost can be attached to it: the
+   * client could claim any number, but a continue moves the bike and so is written into the replay like
+   * every other button.
+   */
+  readonly continues: number;
   readonly furthestX: number;
 }
 
@@ -219,6 +227,7 @@ export function simulateReplay(
 
   const simulation = createBikeSimulation(engine, level);
   let crashes = 0;
+  let continues = 0;
   let wasCrashed = false;
   let furthestX = 0;
   let ticksSimulated = 0;
@@ -231,6 +240,7 @@ export function simulateReplay(
         const state = simulation.getState();
         if (state.crashed && !wasCrashed) crashes += 1;
         wasCrashed = state.crashed;
+        continues = state.continues;
         if (state.x > furthestX) furthestX = state.x;
         if (state.finished) {
           const finishTick = state.finishTick ?? state.tick;
@@ -240,6 +250,7 @@ export function simulateReplay(
             durationMs: Math.round(finishTick * TICK_SECONDS * 1000),
             ticksSimulated,
             crashes,
+            continues: state.continues,
             furthestX,
           };
         }
@@ -255,6 +266,7 @@ export function simulateReplay(
     durationMs: null,
     ticksSimulated,
     crashes,
+    continues,
     furthestX,
   };
 }
