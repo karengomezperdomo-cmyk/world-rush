@@ -52,35 +52,38 @@ async function createEmbeddedTestDb(environment: AppEnv): Promise<TestDb> {
 }
 
 /**
- * A private schema on a real server.
+ * A private DATABASE on a real server, one per test file.
  *
- * A schema rather than a database because creating a database per test file is slow and cannot be done from
- * inside a pool connected to another one. The connection's `search_path` points at it, so the migrations —
- * which name no schema — build the whole thing inside it, and dropping it afterwards leaves nothing behind.
- * The migration bookkeeping table goes in the same schema, so parallel test files never fight over it.
+ * It was a private schema first, with the connection's `search_path` pointed at it, which is lighter and
+ * would have been fine — except that Drizzle's generated migrations qualify their foreign keys:
+ * `references "public"."users"`. Under a search_path the tables land in the private schema while the
+ * constraint still looks in `public`, so the very first migration fails with `relation "public.users" does
+ * not exist`. CI found that on the job's first ever run; nothing local could have, because there is no
+ * PostgreSQL on the development machine.
  *
- * More than one connection on purpose: a pool of one would make this engine behave exactly like the embedded
- * one, which would defeat the point of running against it.
+ * A database of its own gives each test file its own `public`, which is exactly what those migrations
+ * expect, and dropping it afterwards leaves nothing behind. `CREATE DATABASE` cannot run inside a
+ * transaction and cannot be issued from a pool connected to the database being created, so both the create
+ * and the drop go through their own short-lived connection to the server's original database.
+ *
+ * The pool has more than one connection on purpose: a pool of one would behave exactly like the embedded
+ * engine, which would defeat the point of running against this one.
  */
 async function createPostgresTestDb(databaseUrl: string, environment: AppEnv): Promise<TestDb> {
-  const schema = `test_${randomBytes(6).toString('hex')}`;
+  const name = `test_${randomBytes(6).toString('hex')}`;
 
   const admin = createHostedDb({ databaseUrl });
   try {
-    await admin.db.execute(sql.raw(`create schema "${schema}"`));
+    await admin.db.execute(sql.raw(`create database "${name}"`));
   } finally {
     await admin.close();
   }
 
   const scoped = createHostedDb({
-    databaseUrl,
+    databaseUrl: withDatabase(databaseUrl, name),
     maxConnections: 5,
-    driverOptions: { connection: { search_path: schema } },
   });
-  await migrateHosted(scoped.db as Parameters<typeof migrateHosted>[0], {
-    migrationsFolder,
-    migrationsSchema: schema,
-  });
+  await migrateHosted(scoped.db as Parameters<typeof migrateHosted>[0], { migrationsFolder });
   await markDatabaseEnvironment(scoped.db, environment);
 
   return {
@@ -90,10 +93,19 @@ async function createPostgresTestDb(databaseUrl: string, environment: AppEnv): P
       await scoped.close();
       const cleanup = createHostedDb({ databaseUrl });
       try {
-        await cleanup.db.execute(sql.raw(`drop schema "${schema}" cascade`));
+        // FORCE because a connection that outlived the pool would otherwise block the drop and leak the
+        // database into the next run.
+        await cleanup.db.execute(sql.raw(`drop database if exists "${name}" with (force)`));
       } finally {
         await cleanup.close();
       }
     },
   };
+}
+
+/** The same server, a different database. */
+function withDatabase(databaseUrl: string, name: string): string {
+  const url = new URL(databaseUrl);
+  url.pathname = `/${name}`;
+  return url.toString();
 }

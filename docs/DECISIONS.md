@@ -680,9 +680,13 @@ rather than deleted, because a skipped test says "not covered here" while a miss
 
 CI gained a second job that runs the whole suite against `postgres:18-alpine`.
 
-> **This job has never run.** There is no Docker and no PostgreSQL on the development machine, so the real-
-> server path is written and typechecked but unexercised; its first CI run is its verification. Written down
-> here because "we test against real Postgres" would otherwise read as a fact from the moment it is merged.
+> **Its first run failed, which is the point of writing it.** The harness gave each test file a private
+> schema and pointed the connection's search_path at it — but Drizzle's generated migrations qualify their
+> foreign keys (`references "public"."users"`), so the tables landed in the private schema while the
+> constraint looked in `public`, and the first migration died with `relation "public.users" does not exist`.
+> Nothing local could have caught it: there is no PostgreSQL on the development machine. Each test file now
+> gets its own DATABASE, which gives it its own `public`, and CI remains the only place this path is
+> exercised.
 
 ## 1s. A6 done (2026-10-03): the app speaks Spanish
 
