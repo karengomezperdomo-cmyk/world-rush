@@ -99,6 +99,21 @@ export const SUNSET_CANYON: Level = defineLevel({
   start: { x: 0, y: 0.6 },
   finishX: 720,
   killY: -14,
+  // Monday is the gentle one, and `maps.test.ts` holds it to that: a rider who only holds the throttle
+  // must finish without crashing. The first draft of this put a stack of crates at 150 m and the test
+  // came back with fifteen crashes — on the ground, in a side-scroller, there is no "beside the line",
+  // so any block is a wall. Blocks therefore start on the harder maps. Monday gets kickers gentle enough
+  // to ride blind, and fuel cans, which cost nothing to ignore and reward a rider who goes for them.
+  ramps: [
+    { x: 232, width: 4, height: 1.1, art: 'wood' },
+    { x: 470, width: 5, height: 1.1, art: 'dirt' },
+  ],
+  fuelCans: [
+    { x: 120, refill: 6 },
+    { x: 250, y: 2.6, refill: 8 }, // deliberately high: this one is only reachable off the kicker at 232
+    { x: 400, refill: 6 },
+    { x: 560, refill: 8 },
+  ],
 });
 
 /**
@@ -183,6 +198,18 @@ export const CORAL_COAST: Level = defineLevel({
   ]),
   start: { x: 0, y: 0.6 },
   finishX: 800,
+  // Tuesday: the sea is the hazard, so it is drawn as one instead of being left to killY. The water sits
+  // in the gaps the track already has - coming up short was always fatal here; now it looks fatal too.
+  // The sea fills the holes the track already has: shallow, because on this map the water sits just under
+  // the sand and coming up short is meant to end the run immediately.
+  gapHazard: { art: 'water', depth: 0.8 },
+  ramps: [{ x: 360, width: 5, height: 1.1, art: 'wood' }],
+  fuelCans: [
+    { x: 140, refill: 6 },
+    { x: 330, refill: 6 },
+    { x: 560, refill: 8 },
+    { x: 700, refill: 6 },
+  ],
   // Water, not a canyon floor: a metre and a half under the lowest sand.
   killY: -3.5,
 });
@@ -273,6 +300,18 @@ export const EMERALD_WOODS: Level = defineLevel({
   ]),
   start: { x: 0, y: 0.6 },
   finishX: 695,
+  // Wednesday is kickers between the pines.
+  //
+  // A log across the track was tried here and taken out again. Pairing a kicker with a wall only works if
+  // the rider arrives at the speed the jump was measured at, and on terrain with hills they do not: the
+  // same ramp that clears a container on the flat leaves them 40 cm short on a climb. Until obstacle
+  // placement can be checked against the speed actually carried into it, walls stay off the maps - see the
+  // trajectory table in obstacles.test.ts for what a jump really buys.
+  fuelCans: [
+    { x: 150, refill: 6 },
+    { x: 300, refill: 8 },
+    { x: 520, refill: 8 },
+  ],
   killY: -12,
 });
 
@@ -350,6 +389,16 @@ export const STEEL_YARD: Level = defineLevel({
   ]),
   start: { x: 0, y: 0.6 },
   finishX: 625,
+  // Thursday is the yard: metal kickers, and the fuel discipline of a shorter track taken flat out.
+  ramps: [
+    { x: 170, width: 5, height: 1.3, art: 'metal' },
+    { x: 390, width: 5, height: 1.2, art: 'metal' },
+  ],
+  fuelCans: [
+    { x: 110, refill: 6 },
+    { x: 300, refill: 8 },
+    { x: 500, refill: 6 },
+  ],
   killY: -13,
 });
 
@@ -432,6 +481,17 @@ export const MAGMA_RIDGE: Level = defineLevel({
   ]),
   start: { x: 0, y: 0.6 },
   finishX: 735,
+  // Friday: the gaps are lava, which changes nothing mechanically and everything about how they read.
+  gapHazard: { art: 'lava', depth: 2.4, thickness: 2.4 },
+  ramps: [
+    { x: 210, width: 5, height: 1.3, art: 'dirt' },
+    { x: 450, width: 5, height: 1.2, art: 'dirt' },
+  ],
+  fuelCans: [
+    { x: 160, refill: 8 },
+    { x: 380, refill: 8 },
+    { x: 620, refill: 8 },
+  ],
   killY: -16,
 });
 
@@ -510,6 +570,18 @@ export const FROST_PEAK: Level = defineLevel({
   ]),
   start: { x: 0, y: 0.6 },
   finishX: 795,
+  // Saturday is the long, slippery one, so the pressure here is the TANK: 795 m on ice takes longer than
+  // anywhere else, and the cans are placed far enough apart that missing one is felt.
+  ramps: [
+    { x: 240, width: 6, height: 1.2, art: 'wood' },
+    { x: 520, width: 6, height: 1.1, art: 'wood' },
+  ],
+  fuelCans: [
+    { x: 130, refill: 8 },
+    { x: 330, refill: 8 },
+    { x: 540, refill: 8 },
+    { x: 700, refill: 8 },
+  ],
   killY: -15,
   // Ice. Enough grip to move, not enough to drive out of a mistake.
   groundFriction: 0.45,
@@ -608,6 +680,15 @@ export const ORBIT_CIRCUIT: Level = defineLevel({
   ]),
   start: { x: 0, y: 0.6 },
   finishX: 740,
+  // Sunday is the week's exam: three kickers, lava under the last one, and cans spread thin enough that
+  // the tank is part of the problem.
+  gapHazard: { art: 'lava', depth: 2.6, thickness: 2.4 },
+  fuelCans: [
+    { x: 120, refill: 6 },
+    { x: 320, refill: 8 },
+    { x: 500, refill: 8 },
+    { x: 680, refill: 6 },
+  ],
   killY: -18,
 });
 

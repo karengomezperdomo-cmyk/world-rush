@@ -271,6 +271,19 @@ export async function startGame({
    * 12 fps whatever rate the game happens to be drawing at. Crossing back below a checkpoint — which happens
    * on a restart — returns her to idle, so a new run does not start with everyone already celebrating.
    */
+  /**
+   * Takes a can off the screen once the simulation says it has been collected.
+   *
+   * Driven by the mask the simulation already keeps, not by a second copy of the pickup rule here: two
+   * implementations of 'has this been taken' would eventually disagree, and the one the player sees is the
+   * one that would be wrong.
+   */
+  function updateFuelCans(state: BikeState): void {
+    for (let index = 0; index < levelView.fuelCans.length; index++) {
+      levelView.fuelCans[index]!.visible = (state.takenCans & (1 << index)) === 0;
+    }
+  }
+
   function updateMarshals(state: BikeState, deltaMs: number): void {
     for (let index = 0; index < levelView.marshals.length; index++) {
       const marshal = levelView.marshals[index]!;
@@ -339,6 +352,7 @@ export async function startGame({
     }
 
     updateMarshals(state, deltaMs);
+    updateFuelCans(state);
 
     effects.update(deltaMs);
   }
@@ -397,6 +411,8 @@ interface LevelView {
   readonly container: Container;
   /** One per checkpoint, in order, so index N is checkpoint N. */
   readonly marshals: MarshalAnimation[];
+  /** One per fuel can, in order, so index N is the can at bit N of `takenCans`. */
+  readonly fuelCans: Container[];
 }
 
 function drawLevel(level: Level, theme: MapTheme, marshalIdle: Texture): LevelView {
@@ -488,6 +504,102 @@ function drawLevel(level: Level, theme: MapTheme, marshalIdle: Texture): LevelVi
   }
   container.addChild(surface);
 
+  // --- Things placed on the track.
+  //
+  // Drawn from the theme's own colours rather than from sprites, like the terrain above: a map can then be
+  // re-skinned without redrawing a single asset, and an obstacle always matches the ground it sits on.
+  const objects = new Graphics();
+  const metres = PIXELS_PER_METRE;
+
+  for (const ramp of level.ramps ?? []) {
+    const baseY = -ramp.y * metres;
+    const left = ramp.x * metres;
+    const right = (ramp.x + ramp.width) * metres;
+    const peakX = ramp.facing === 'left' ? left : right;
+    const peakY = baseY - ramp.height * metres;
+    objects.poly([left, baseY, right, baseY, peakX, peakY]).fill(theme.ramp);
+    // The lip, where the wheels leave: the rider has to read 'jump here' at speed.
+    objects
+      .moveTo(peakX, peakY)
+      .lineTo(
+        ramp.facing === 'left' ? left + 0.6 * metres : right - 0.6 * metres,
+        peakY + 0.18 * metres,
+      )
+      .stroke({ width: 4, color: theme.rampEdge });
+  }
+
+  for (const block of level.blocks ?? []) {
+    const width = block.width * metres;
+    const height = block.height * metres;
+    const x = block.x * metres - width / 2;
+    const y = -block.y * metres - height / 2;
+    objects.rect(x, y, width, height).fill(theme.ground);
+    objects.rect(x, y, width, Math.min(height, 0.18 * metres)).fill(theme.surface);
+    if (block.art === 'crate') {
+      // Diagonal bracing, which is what makes a box read as a crate rather than as a hole in the sky.
+      objects
+        .moveTo(x, y + height)
+        .lineTo(x + width, y)
+        .stroke({ width: 2, color: theme.surface, alpha: 0.5 });
+      objects
+        .moveTo(x, y)
+        .lineTo(x + width, y + height)
+        .stroke({ width: 2, color: theme.surface, alpha: 0.5 });
+    } else if (block.art === 'container') {
+      const ribs = Math.max(2, Math.round(block.width * 2));
+      for (let rib = 1; rib < ribs; rib++) {
+        const px = x + (width * rib) / ribs;
+        objects
+          .moveTo(px, y)
+          .lineTo(px, y + height)
+          .stroke({ width: 2, color: theme.surface, alpha: 0.35 });
+      }
+    }
+  }
+
+  for (const round of level.rounds ?? []) {
+    const radius = round.radius * metres;
+    const cx = round.x * metres;
+    const cy = -round.y * metres;
+    objects.circle(cx, cy, radius).fill(theme.ground);
+    objects.circle(cx, cy, radius * 0.55).fill(theme.surface);
+  }
+
+  for (const hazard of level.hazards ?? []) {
+    const width = hazard.width * metres;
+    const height = hazard.height * metres;
+    const x = hazard.x * metres - width / 2;
+    const y = -hazard.y * metres - height / 2;
+    const colour =
+      hazard.art === 'water' ? 0x1f6fd0 : hazard.art === 'spikes' ? 0x8e9bb8 : 0xd9431f;
+    if (hazard.art === 'spikes') {
+      // Spikes are drawn as spikes: a flat band would read as ground and get ridden into.
+      const teeth = Math.max(2, Math.round(hazard.width * 2));
+      for (let tooth = 0; tooth < teeth; tooth++) {
+        const left = x + (width * tooth) / teeth;
+        const right = x + (width * (tooth + 1)) / teeth;
+        objects.poly([left, y + height, right, y + height, (left + right) / 2, y]).fill(colour);
+      }
+    } else {
+      objects.rect(x, y, width, height).fill({ color: colour, alpha: 0.85 });
+      // A lit surface line, so a pool reads as liquid rather than as a painted rectangle.
+      objects.rect(x, y, width, 0.12 * metres).fill({ color: 0xffffff, alpha: 0.35 });
+    }
+  }
+  container.addChild(objects);
+
+  // Fuel cans get a container each, because they have to disappear when taken.
+  const fuelCans = (level.fuelCans ?? []).map((can) => {
+    const graphics = new Graphics();
+    const size = 0.45 * metres;
+    graphics.rect(-size / 2, -size, size, size).fill(0xd9431f);
+    graphics.rect(-size / 2, -size, size, size * 0.22).fill(0xffc23e);
+    graphics.rect(-size * 0.1, -size * 1.18, size * 0.2, size * 0.2).fill(0x8e9bb8);
+    graphics.position.set(can.x * metres, -can.y * metres + size / 2);
+    container.addChild(graphics);
+    return graphics;
+  });
+
   const markers = new Graphics();
   // A finish line really is a line, so it stays one. Checkpoints are people now.
   const finishX = level.finishX * PIXELS_PER_METRE;
@@ -510,7 +622,7 @@ function drawLevel(level: Level, theme: MapTheme, marshalIdle: Texture): LevelVi
     return { sprite, phase: 'idle', frame: 0, elapsedMs: 0 };
   });
 
-  return { container, marshals };
+  return { container, marshals, fuelCans };
 }
 
 interface BikeTextures {

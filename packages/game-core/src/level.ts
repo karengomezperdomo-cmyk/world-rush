@@ -308,20 +308,100 @@ export function autoCheckpoints(
 }
 
 /**
- * Builds a level, deriving the checkpoints from the geometry unless they are given explicitly.
+ * The holes in a track: the x-span between the end of one ground strip and the start of the next.
+ *
+ * Hand-written hazard positions are the same trap as hand-written ramp heights. A lava pool typed in by
+ * eye on Orbit Circuit landed ON the track rather than in the hole beside it, and killed the rider on every
+ * lap - 34 crashes before the test gave up. The holes are already in the data; they should be read, not
+ * guessed.
+ */
+export function gapSpans(ground: readonly GroundStrip[]): { from: number; to: number }[] {
+  const spans: { from: number; to: number }[] = [];
+  for (let index = 0; index < ground.length - 1; index++) {
+    const current = ground[index];
+    const next = ground[index + 1];
+    const end = current?.[current.length - 1];
+    const start = next?.[0];
+    if (!end || !start) continue;
+    if (start[0] > end[0]) spans.push({ from: end[0], to: start[0] });
+  }
+  return spans;
+}
+
+/**
+ * Fills every hole in a track with a hazard, so coming up short is visibly fatal rather than merely fatal.
+ *
+ * `depth` is how far below the lip of the hole the surface sits: shallow for water lapping at the sand,
+ * deeper for lava at the bottom of a ravine.
+ */
+export function fillGaps(
+  ground: readonly GroundStrip[],
+  options: { art: LevelHazard['art']; depth?: number; thickness?: number },
+): LevelHazard[] {
+  const depth = options.depth ?? 1.2;
+  const thickness = options.thickness ?? 2;
+  return gapSpans(ground).map(({ from, to }) => ({
+    x: (from + to) / 2,
+    // Measured from the lip the rider leaves, which is the height they can see when they decide.
+    y: -depth - thickness / 2,
+    width: to - from,
+    height: thickness,
+    art: options.art,
+  }));
+}
+
+/** A level as it is written down: things that can be derived may be left out. */
+export type LevelSpec = Omit<Level, 'checkpoints' | 'ramps' | 'fuelCans'> & {
+  readonly checkpoints?: readonly number[];
+  /** `y` may be omitted, and is then snapped to the ground under `x`. */
+  readonly ramps?: readonly (Omit<LevelRamp, 'y'> & { readonly y?: number })[];
+  /** `y` may be omitted, and the can then floats a rider's height above the ground. */
+  readonly fuelCans?: readonly (Omit<FuelCan, 'y'> & { readonly y?: number })[];
+  /**
+   * Fill every hole in this track with the same hazard.
+   *
+   * Written this way round because the holes are already in the geometry: typing their positions out again
+   * by hand is how a lava pool ended up sitting on the racing line of Orbit Circuit, killing the rider on
+   * every lap. Added to whatever `hazards` lists explicitly.
+   */
+  readonly gapHazard?: {
+    readonly art: LevelHazard['art'];
+    readonly depth?: number;
+    readonly thickness?: number;
+  };
+};
+
+/** How high above the ground a can sits when its height is left to the builder. */
+const FUEL_CAN_RIDE_HEIGHT = 1.0;
+
+/**
+ * Builds a level, deriving what can be derived: the checkpoints from the geometry, and the height of
+ * anything placed on the track from the ground beneath it.
  *
  * On a low-friction map the bike needs noticeably more road to get back up to speed, so respawn points there
  * demand a longer run-up than they do on rock.
+ *
+ * **Heights are snapped for the same reason gaps are measured by width** (see `buildTrack`): a ramp's y is
+ * the height of terrain that is the sum of a dozen relative steps, and nobody re-derives that in their head
+ * after a tweak. Writing one by hand put a kicker 1.5 m above the ground on Sunset Canyon, where its
+ * vertical back face became a wall that threw the rider into the one crash that map is not allowed to have.
  */
-export function defineLevel(
-  spec: Omit<Level, 'checkpoints'> & { checkpoints?: readonly number[] },
-): Level {
+export function defineLevel({ gapHazard, ...spec }: LevelSpec): Level {
   const slippery = (spec.groundFriction ?? 1.0) < 1.0;
   if ((spec.fuelCans?.length ?? 0) > MAX_FUEL_CANS) {
     throw new Error(`${spec.id}: at most ${MAX_FUEL_CANS} fuel cans per level`);
   }
+  const ground = spec.ground;
+  const onGround = (x: number, fallback: number) => groundYAt({ ground } as Level, x) ?? fallback;
+  const gapHazards = gapHazard ? fillGaps(spec.ground, gapHazard) : [];
   return {
     ...spec,
+    hazards: [...(spec.hazards ?? []), ...gapHazards],
+    ramps: spec.ramps?.map((ramp) => ({ ...ramp, y: ramp.y ?? onGround(ramp.x, spec.start.y) })),
+    fuelCans: spec.fuelCans?.map((can) => ({
+      ...can,
+      y: can.y ?? onGround(can.x, spec.start.y) + FUEL_CAN_RIDE_HEIGHT,
+    })),
     checkpoints:
       spec.checkpoints ??
       autoCheckpoints(spec.ground, spec.finishX, { minRunway: slippery ? 60 : 50 }),
