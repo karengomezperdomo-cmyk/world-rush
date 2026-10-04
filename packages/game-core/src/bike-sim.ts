@@ -8,6 +8,28 @@ const SUB_STEP_COUNT = 4;
 
 /** Ticks a crash freezes input for before an automatic respawn at the last checkpoint. */
 export const CRASH_RESPAWN_TICKS = 60;
+
+/**
+ * The tank, in SECONDS OF THROTTLE rather than litres.
+ *
+ * Seconds are the unit the player actually feels and the unit a map is tuned in: a track takes 45-90 s and
+ * most of it is spent on the gas, so "60 seconds of throttle" says immediately that finishing with the
+ * throttle pinned the whole way is not an option, and that the cans on the track are the difference.
+ *
+ * Only GAS burns. Coasting, braking and leaning are free, which is what makes lifting off a real decision
+ * instead of a mistake.
+ */
+export const DEFAULT_TANK_SECONDS = 60;
+/** How close the chassis has to pass to a can to take it. Generous: this is a game, not a parking test. */
+const FUEL_PICKUP_RADIUS = 1.3;
+/**
+ * The least fuel a continue hands back.
+ *
+ * Without a floor, running dry exactly at a checkpoint would put the player back on an empty tank, out of
+ * fuel again on the next tick, for ever. Ten seconds is enough to reach the following checkpoint on every
+ * map, and little enough that continuing is never a refuelling strategy.
+ */
+const CONTINUE_MINIMUM_SECONDS = 10;
 /** Metres above the ground a respawn drops the bike from, so it settles instead of clipping into it. */
 const RESPAWN_CLEARANCE = 1.0;
 /** Chassis "up" dot with world-up below this = too far tilted: a crash (docs/design/GDD.md §5). */
@@ -30,6 +52,13 @@ export interface BikeState {
   readonly crashedTicksAgo: number;
   readonly finished: boolean;
   readonly finishTick: number | null;
+  /** Seconds of throttle left. Zero means the engine is dead and the bike only coasts. */
+  readonly fuel: number;
+  readonly outOfFuel: boolean;
+  /** Which cans have been taken, one bit each, so the renderer can stop drawing them. */
+  readonly takenCans: number;
+  /** How many times the player has continued from a checkpoint after running dry. */
+  readonly continues: number;
 }
 
 export interface BikeSimulation {
@@ -190,6 +219,12 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
 
   let tick = 0;
   let checkpointIndex = -1;
+  let fuel = DEFAULT_TANK_SECONDS;
+  /** The tank as it stood at the last checkpoint: what a respawn or a continue goes back to. */
+  let fuelAtCheckpoint = DEFAULT_TANK_SECONDS;
+  /** One bit per can taken. Never cleared, so no can can be collected twice. */
+  let takenCans = 0;
+  let continues = 0;
   let crashed = false;
   let crashedAtTick = -1;
   let finished = false;
@@ -221,16 +256,54 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
       b2Body_SetAngularVelocity(body as never, 0);
     }
     crashed = false;
+    // The tank goes back to what it held at the checkpoint, not to full: a crash - or a continue - must
+    // not become a way to refuel. Taking the same can twice is impossible for the same reason, because
+    // the taken-cans mask is never cleared.
+    fuel = fuelAtCheckpoint;
+  }
+
+  /**
+   * Takes every can the chassis is close enough to this tick.
+   *
+   * Distance is compared SQUARED, so no square root is involved: this runs every tick inside the
+   * deterministic simulation, and the determinism lint bans the host maths that would creep in otherwise.
+   */
+  function takeFuelCans(x: number, y: number): void {
+    const cans = level.fuelCans;
+    if (!cans) return;
+    for (let index = 0; index < cans.length; index++) {
+      const bit = 1 << index;
+      if ((takenCans & bit) !== 0) continue;
+      const can = cans[index]!;
+      const dx = can.x - x;
+      const dy = can.y - y;
+      if (dx * dx + dy * dy <= FUEL_PICKUP_RADIUS * FUEL_PICKUP_RADIUS) {
+        takenCans |= bit;
+        fuel = Math.min(DEFAULT_TANK_SECONDS, fuel + can.refill);
+      }
+    }
   }
 
   function step(input: InputMask): void {
     tick += 1;
 
+    // A continue only means anything once the tank is dry: pressed at any other moment it does nothing,
+    // so it can never be used as a free teleport back to a checkpoint.
+    if (hasInput(input, INPUT.CONTINUE) && fuel <= 0 && !finished) {
+      continues += 1;
+      // Continuing into an empty tank would strand the player at the checkpoint for ever, so the floor is
+      // enough fuel to reach the next one.
+      fuelAtCheckpoint = Math.max(fuelAtCheckpoint, CONTINUE_MINIMUM_SECONDS);
+      respawnAtCheckpoint();
+    }
+
     if (crashed) {
       if (tick - crashedAtTick >= CRASH_RESPAWN_TICKS) respawnAtCheckpoint();
     } else if (!finished) {
-      const gas = hasInput(input, INPUT.GAS);
+      // A dead engine still steers and still brakes; it just cannot drive.
+      const gas = hasInput(input, INPUT.GAS) && fuel > 0;
       const brake = hasInput(input, INPUT.BRAKE);
+      if (gas) fuel = Math.max(0, fuel - TICK_SECONDS);
       if (gas && !brake) {
         b2WheelJoint_SetMotorSpeed(rearJointId, DRIVE_WHEEL_SPEED);
         b2WheelJoint_SetMaxMotorTorque(rearJointId, DRIVE_MAX_TORQUE);
@@ -261,7 +334,11 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
         crashedAtTick = tick;
       } else {
         const nextCheckpoint = level.checkpoints[checkpointIndex + 1];
-        if (nextCheckpoint !== undefined && pos.x >= nextCheckpoint) checkpointIndex += 1;
+        if (nextCheckpoint !== undefined && pos.x >= nextCheckpoint) {
+          checkpointIndex += 1;
+          fuelAtCheckpoint = fuel;
+        }
+        takeFuelCans(pos.x, pos.y);
         if (pos.x >= level.finishX) {
           finished = true;
           finishTick = tick;
@@ -283,6 +360,10 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
       crashedTicksAgo: crashed ? tick - crashedAtTick : 0,
       finished,
       finishTick,
+      fuel,
+      outOfFuel: fuel <= 0,
+      takenCans,
+      continues,
     };
   }
 
@@ -300,6 +381,10 @@ export function createBikeSimulation(engine: PhysicsEngine, level: Level): BikeS
     crashedTicksAgo: 0,
     finished: false,
     finishTick: null,
+    fuel: DEFAULT_TANK_SECONDS,
+    outOfFuel: false,
+    takenCans: 0,
+    continues: 0,
   };
 
   return {

@@ -4,7 +4,7 @@ import { hasInput, INPUT, INPUT_MASK_ALL, isValidInputMask, withInput } from './
 describe('input mask', () => {
   it('uses one distinct bit per button', () => {
     const bits = Object.values(INPUT);
-    expect(new Set(bits).size).toBe(4);
+    expect(new Set(bits).size).toBe(5);
     expect(bits.reduce((all, bit) => all | bit, 0)).toBe(INPUT_MASK_ALL);
   });
 
@@ -29,7 +29,8 @@ describe('input mask', () => {
   it('validates masks (a replay with unknown bits is rejected by the server)', () => {
     expect(isValidInputMask(0)).toBe(true);
     expect(isValidInputMask(INPUT_MASK_ALL)).toBe(true);
-    expect(isValidInputMask(16)).toBe(false);
+    // 32 is the first bit above CONTINUE: an unknown button in a replay must still be refused.
+    expect(isValidInputMask(32)).toBe(false);
     expect(isValidInputMask(-1)).toBe(false);
     expect(isValidInputMask(1.5)).toBe(false);
     expect(isValidInputMask(Number.NaN)).toBe(false);

@@ -10,9 +10,18 @@ export const INPUT = {
   BRAKE: 0b0010,
   LEAN_BACK: 0b0100,
   LEAN_FORWARD: 0b1000,
+  /**
+   * "Continue from the last checkpoint", after running the tank dry.
+   *
+   * It is an INPUT, not an event on the side, because that is what makes it verifiable: a continue moves the
+   * bike and refills the tank, so a replay that did not carry it would re-simulate into a different race.
+   * Riding it inside the existing per-tick mask means the server reproduces continues exactly, and can count
+   * them — nobody can claim fewer than they took.
+   */
+  CONTINUE: 0b10000,
 } as const;
 
-export const INPUT_MASK_ALL = 0b1111;
+export const INPUT_MASK_ALL = 0b11111;
 
 /** A bit set of INPUT flags. */
 export type InputMask = number;

@@ -36,7 +36,34 @@ export interface Level {
    * than a colour change.
    */
   readonly groundFriction?: number;
+  /**
+   * Petrol cans to ride through, each worth a few seconds of throttle.
+   *
+   * They are the reason the tank makes a map more interesting rather than just shorter. A can off the racing
+   * line turns "is this jump faster?" into "is this jump faster AND can I afford to skip the can?", which is
+   * the first decision these tracks have ever offered — until now the fast line was the only line.
+   *
+   * Positioned in metres, and picked up by proximity rather than by crossing an x, so a can CAN be missed:
+   * one hung over a jump is a different proposition from one sitting on the floor.
+   */
+  readonly fuelCans?: readonly FuelCan[];
 }
+
+export interface FuelCan {
+  readonly x: number;
+  readonly y: number;
+  /** Seconds of throttle this can gives back. */
+  readonly refill: number;
+}
+
+/**
+ * How many cans a level may hold.
+ *
+ * Which ones have been taken travels in the simulation state as a bit mask, so 32 is the ceiling the number
+ * type gives us. No map needs anywhere near that; the limit exists so the day somebody writes a 33rd can it
+ * fails loudly here instead of silently never being collectable.
+ */
+export const MAX_FUEL_CANS = 32;
 
 /** A run of ground, as relative `[dx, dy]` steps from wherever the previous piece left off. */
 export interface GroundPiece {
@@ -218,6 +245,9 @@ export function defineLevel(
   spec: Omit<Level, 'checkpoints'> & { checkpoints?: readonly number[] },
 ): Level {
   const slippery = (spec.groundFriction ?? 1.0) < 1.0;
+  if ((spec.fuelCans?.length ?? 0) > MAX_FUEL_CANS) {
+    throw new Error(`${spec.id}: at most ${MAX_FUEL_CANS} fuel cans per level`);
+  }
   return {
     ...spec,
     checkpoints:

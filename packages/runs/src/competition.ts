@@ -14,7 +14,10 @@ import { levelFingerprint, mapByNumber, type MapEntry } from '@worldrush/game-co
  * Bump this whenever the simulation changes in a way that alters outcomes. `determinism.test.ts` is the
  * alarm: if it fails, this needs bumping and the old competitions keep their old value.
  */
-export const CURRENT_RULESET = 'r1';
+// r2 (2026-10-03): the bike has a fuel tank. A replay recorded under r1 could hold more than a tankful of
+// throttle, which would now re-simulate differently - the engine dies partway - so r1 replays are not
+// comparable and competitions opened under r1 keep their own value.
+export const CURRENT_RULESET = 'r2';
 
 /** Midnight UTC of the day containing `at`. The cut-over hour is decision A3: UTC. */
 export function dayKeyUtc(at: Date): Date {
