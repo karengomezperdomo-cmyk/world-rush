@@ -680,13 +680,28 @@ rather than deleted, because a skipped test says "not covered here" while a miss
 
 CI gained a second job that runs the whole suite against `postgres:18-alpine`.
 
-> **Its first run failed, which is the point of writing it.** The harness gave each test file a private
-> schema and pointed the connection's search_path at it — but Drizzle's generated migrations qualify their
-> foreign keys (`references "public"."users"`), so the tables landed in the private schema while the
-> constraint looked in `public`, and the first migration died with `relation "public.users" does not exist`.
-> Nothing local could have caught it: there is no PostgreSQL on the development machine. Each test file now
-> gets its own DATABASE, which gives it its own `public`, and CI remains the only place this path is
-> exercised.
+### It ran, and it found three real bugs (2026-10-04)
+
+The job was merged with a note saying it had never run and that its first CI run would be its verification.
+It took three runs to go green, and each failure was a genuine defect that **every local test passed**,
+because locally there is only one driver:
+
+1. **Migrations could not build the schema.** The harness gave each test file a private schema via
+   `search_path`, but Drizzle's generated migrations qualify their foreign keys (`references
+   "public"."users"`), so tables landed in the private schema while the constraint looked in `public`.
+   Each test file now gets its own DATABASE, which gives it its own `public`.
+2. **Every leaderboard read was broken against a real server.** The row comparison that counts who is
+   ahead passed a JavaScript `Date` straight into the query. PGlite accepts it; postgres.js refuses it
+   outright. Reading a board, ranking a player and finding who is directly ahead would all have failed in
+   production — since Phase 7. It goes in as an ISO string with an explicit `::timestamptz` now.
+3. **Duplicate replays were not recognised.** `pgConstraintName` read only `constraint`, PGlite's
+   spelling; postgres.js keeps the server's `constraint_name`. The unique violation was raised, not
+   recognised, and rethrown — a resubmitted replay came back as a raw query error instead of "already
+   submitted". Both spellings now, with `errors.test.ts` pinning the real shape of each driver's error.
+
+Both jobs are green as of commit `b10066e`. The lesson is worth more than the fixes: an embedded database
+that speaks the same SQL is not the same thing as the database that will run in production, and the
+difference hides in the driver, not the queries.
 
 ## 1s. A6 done (2026-10-03): the app speaks Spanish
 
