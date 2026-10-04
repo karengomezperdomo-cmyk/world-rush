@@ -402,7 +402,7 @@ export async function rankOf(
       and(
         eq(bestScores.competitionId, competitionId),
         eq(bestScores.isVisible, true),
-        sql`(${bestScores.bestTimeMs}, ${bestScores.achievedAt}, ${bestScores.userId}) < (${score.bestTimeMs}, ${score.achievedAt}, ${score.userId})`,
+        sql`(${bestScores.bestTimeMs}, ${bestScores.achievedAt}, ${bestScores.userId}) < (${score.bestTimeMs}, ${score.achievedAt.toISOString()}::timestamptz, ${score.userId})`,
       ),
     );
   return { rank: (ahead[0]?.count ?? 0) + 1, totalPlayers };

@@ -93,6 +93,11 @@ export async function readLeaderboard(
     } else {
       // Below the visible page: count how many are ahead rather than fetching the whole board, so a player
       // ranked 9,000th costs the same as one ranked 10th.
+      //
+      // The timestamp goes in as an ISO string with an explicit cast, not as a Date. A raw Date reaches the
+      // driver as a parameter with no type mapping, which PGlite accepts and postgres.js refuses outright
+      // ("the string argument must be of type string... received an instance of Date"). Every leaderboard
+      // read did this, and only the real-PostgreSQL CI job could ever have seen it.
       const mine = await db
         .select()
         .from(bestScores)
@@ -113,7 +118,7 @@ export async function readLeaderboard(
             and(
               eq(bestScores.competitionId, competitionId),
               eq(bestScores.isVisible, true),
-              sql`(${bestScores.bestTimeMs}, ${bestScores.achievedAt}, ${bestScores.userId}) < (${score.bestTimeMs}, ${score.achievedAt}, ${score.userId})`,
+              sql`(${bestScores.bestTimeMs}, ${bestScores.achievedAt}, ${bestScores.userId}) < (${score.bestTimeMs}, ${score.achievedAt.toISOString()}::timestamptz, ${score.userId})`,
             ),
           );
         // The player directly ahead, by the board's own ordering. One row, not the whole page above them:
@@ -125,7 +130,7 @@ export async function readLeaderboard(
             and(
               eq(bestScores.competitionId, competitionId),
               eq(bestScores.isVisible, true),
-              sql`(${bestScores.bestTimeMs}, ${bestScores.achievedAt}, ${bestScores.userId}) < (${score.bestTimeMs}, ${score.achievedAt}, ${score.userId})`,
+              sql`(${bestScores.bestTimeMs}, ${bestScores.achievedAt}, ${bestScores.userId}) < (${score.bestTimeMs}, ${score.achievedAt.toISOString()}::timestamptz, ${score.userId})`,
             ),
           )
           .orderBy(
